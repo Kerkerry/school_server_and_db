@@ -8,10 +8,10 @@ const index=(req,res)=>{
         `,
         (err,result)=>{
         if(err){
-            res.send({statusCode:500,error:err});
+            res.json({statusCode:500,error:err});
             console.error(err);
         }else{
-            res.send({statusCode:200,body:result});
+            res.json({statusCode:200,body:result});
         }
     })
 }

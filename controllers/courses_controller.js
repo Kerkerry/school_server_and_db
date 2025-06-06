@@ -11,14 +11,14 @@ const courses=(req,res)=>{
             ON cs.instructor_id=u.user_id`,
             (err,result)=>{
                 if(err){
-                    res.send({statusCode:500,error:err})  
+                    res.json({statusCode:500,error:err})  
                 }else{
-                    res.send({statusCode:200,body:result})
+                    res.json({statusCode:200,body:result})
                 }
             }
         )
     } catch (error) {
-        res.send({statusCode:500,error:error})
+        res.json({statusCode:500,error:error})
     }
 }
 
@@ -36,14 +36,14 @@ const course=(req,res)=>{
             [id],
             (err,result)=>{
                 if(err){
-                    res.send({statusCode:500,error:err})
+                    res.json({statusCode:500,error:err})
                 }else{
-                    res.send({statusCode:200,body:result})
+                    res.json({statusCode:200,body:result})
                 }
             }
         )
     } catch (error) {
-        res.send({statusCode:500,error:error})
+        res.json({statusCode:500,error:error})
     }
 }
 

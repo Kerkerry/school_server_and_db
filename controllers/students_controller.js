@@ -7,14 +7,14 @@ const students=(req,res)=>{
             `SELECT * FROM users WHERE role='Student'`,
             (err,result)=>{
                 if(err){
-                    res.send({statusCode:500,error:err});
+                    res.json({statusCode:500,error:err});
                 }else{
-                    res.send({statusCode:200,body:result});
+                    res.json({students:result});
                 }
             }
         )
     } catch (error) {
-        res.send({statusCode:500,error:error});
+        res.json({statusCode:500,error:error});
     }
 }
 
@@ -35,14 +35,14 @@ const student=(req,res)=>{
             [id],
             (err,result)=>{
                 if(err){
-                    res.send({statusCode:500,error:err});
+                    res.json({statusCode:500,error:err});
                 }else{
-                    res.send({statusCode:200,body:result});
+                    res.json({statusCode:200,body:result});
                 }
             }
         )
     } catch (error) {
-        res.send({statusCode:500,error:error});
+        res.json({statusCode:500,error:error});
     }
 }
 
@@ -63,14 +63,14 @@ const course_materials=(req,res)=>{
             `,
             (err,result)=>{
                 if(err){
-                    res.send({statusCode:500,error:err})
+                    res.json({statusCode:500,error:err})
                 }else{
-                    res.send({statusCode:200,body:result})
+                    res.json({statusCode:200,body:result})
                 }
             }
         );
     } catch (error) {
-        res.send({statusCode:500,error:error})
+        res.json({statusCode:500,error:error})
     }
 }
 const course_material=(req,res)=>{
@@ -93,9 +93,9 @@ const course_material=(req,res)=>{
             (err,result)=>{
                 if(err){
                     console.log(err);
-                    res.send({statusCode:500,error:err})
+                    res.json({statusCode:500,error:err})
                 }else{
-                    res.send({statusCode:200,body:result})
+                    res.json({statusCode:200,body:result})
                 }
             }
         );
