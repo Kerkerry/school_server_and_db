@@ -69,6 +69,29 @@ const create_student=(req,res)=>{
     }
 }
 
+const updateStudent=(req,res)=>{
+    console.log(req.body);
+     let {user_id,username,email,role,password_hash,first_name,last_name}=req.body;
+    try {
+        con.query(
+            `UPDATE users SET username = ?,email = ?, role = ?,password_hash = ?,first_name = ?,last_name = ? WHERE user_id = ?`,
+            [username,email,role,password_hash,first_name,last_name,user_id],
+            (err,result)=>{
+                if(err){
+                    console.log(err);
+                    res.status(400).json({error:err});
+                }else{
+                    console.log(result);
+                    res.status(200).json({success:result});
+                }
+            }
+        );
+    } catch (error) {
+        console.log(error);
+        res.status(400).json({error:error})
+    }
+}
+
 const course_materials=(req,res)=>{
     try {
         con.query(
@@ -131,6 +154,7 @@ export default{
     student,
     students,
     create_student,
+    updateStudent,
     course_materials,
     course_material
 }
