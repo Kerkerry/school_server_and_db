@@ -46,6 +46,29 @@ const student=(req,res)=>{
     }
 }
 
+const create_student=(req,res)=>{
+    let {username,email,role,password_hash,first_name,last_name}=req.body;
+    try {
+        con.query(
+            `INSERT INTO users(username,email,role,password_hash,first_name,last_name)  
+            VALUES(?,?,?,?,?,?)`,
+            [username,email,role,password_hash,first_name,last_name],
+            (err,result)=>{
+                if(err){
+                    console.log(err);
+                    res.status(400).json({error:err});
+                }else{
+                    console.log(result);
+                    res.status(200).json({success:result});
+                }
+            }
+        );
+    } catch (error) {
+        console.log(error);
+        res.status(400).json({error:error})
+    }
+}
+
 const course_materials=(req,res)=>{
     try {
         con.query(
@@ -107,6 +130,7 @@ const course_material=(req,res)=>{
 export default{
     student,
     students,
+    create_student,
     course_materials,
     course_material
 }
