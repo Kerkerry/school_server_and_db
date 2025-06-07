@@ -4,7 +4,7 @@ import connection from './models/connection.js'
 import Routes from './routes/routes.js';
 dotenv.config({path:'school.env'})
 const app=express();
-
+app.use(express.json());
 connection.connect((err)=>{
     if(err){
         console.error(err.stack);
