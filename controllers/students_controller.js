@@ -1,5 +1,5 @@
 import con from '../models/connection.js';
-
+import bcrypt from 'bcrypt';
 
 const students=(req,res)=>{
     try {
@@ -47,28 +47,33 @@ const student=(req,res)=>{
 }
 
 const create_student=(req,res)=>{
-    console.log(req.body);
-    
-    let {username,email,role,password_hash,first_name,last_name}=req.body;
-    try {
-        con.query(
-            `INSERT INTO users(username,email,role,password_hash,first_name,last_name)  
-            VALUES(?,?,?,?,?,?)`,
-            [username,email,role,password_hash,first_name,last_name],
-            (err,result)=>{
-                if(err){
-                    console.log(err);
-                    res.status(400).json({error:err});
-                }else{
-                    console.log(result);
-                    res.status(200).json({success:result});
-                }
+    let {username,email,role,password,first_name,last_name}=req.body;
+    const saltRounds = 12;
+    bcrypt.hash(password, saltRounds, function(err, hash) {
+        if(err){
+            res.status(500).json({error:err});
+        }else{
+            try {
+                con.query(
+                    `INSERT INTO users(username,email,role,password_hash,first_name,last_name)  
+                    VALUES(?,?,?,?,?,?)`,
+                    [username,email,role,hash,first_name,last_name],
+                    (err,result)=>{
+                        if(err){
+                            console.log(err);
+                            res.status(400).json({error:err});
+                        }else{
+                            console.log(result);
+                            res.status(200).json({success:result});
+                        }
+                    }
+                );
+            } catch (error) {
+                console.log(error);
+                res.status(400).json({error:error})
             }
-        );
-    } catch (error) {
-        console.log(error);
-        res.status(400).json({error:error})
-    }
+        }
+    });
 }
 
 const updateStudent=(req,res)=>{
