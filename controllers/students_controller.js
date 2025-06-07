@@ -76,6 +76,38 @@ const create_student=(req,res)=>{
     });
 }
 
+const loginStudent=(req,res)=>{
+    const {username,password}=req.body;
+    try {
+        con.query(
+        `SELECT username,password_hash FROM users WHERE username = ?`,
+        [username],
+        (err,result)=>{
+            if(result.length===0){
+                res.status(200).json({message:"The user is not registered."})
+            }else{
+                if(err){
+                console.log(err);
+                res.status(400).json({error:err});
+                }else{
+                    const hash=result[0].password_hash;
+                    bcrypt.compare(password, hash, function(passerr, passresult) {
+                        if(passerr){
+                            console.log(err);
+                            res.status(400).json({error:err});
+                        }else{
+                            res.status(200).json({login:passresult,message:passresult?"Success":"Wrong password"})
+                        }
+                    });
+                }
+            }
+        }
+    );
+    } catch (error) {
+        res.status(400).json({error:error})
+    }
+}
+
 const updateStudent=(req,res)=>{
      let {user_id,username,email,role,password_hash,first_name,last_name}=req.body;
     try {
@@ -181,6 +213,7 @@ export default{
     create_student,
     updateStudent,
     deleteStudent,
+    loginStudent,
     course_materials,
     course_material
 }
