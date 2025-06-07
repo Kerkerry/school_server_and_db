@@ -27,26 +27,28 @@ const student=(req,res)=>{
             c.course_code,c.course_name,c.description, c.prerequisites,
             c.credits,c.level,c.term
              FROM users u
-            JOIN enrollments e
+            LEFT JOIN enrollments e
             ON u.user_id=e.student_id
-            JOIN courses c
+            LEFT JOIN courses c
             ON e.course_id=c.course_id
             WHERE u.user_id = ? AND role='Student'`,
             [id],
             (err,result)=>{
                 if(err){
-                    res.json({statusCode:500,error:err});
+                    res.status(400).json({error:err});
                 }else{
-                    res.json({statusCode:200,body:result});
+                    res.status(200).json({body:result});
                 }
             }
         )
     } catch (error) {
-        res.json({statusCode:500,error:error});
+        res.status(500).json({error:error});
     }
 }
 
 const create_student=(req,res)=>{
+    console.log(req.body);
+    
     let {username,email,role,password_hash,first_name,last_name}=req.body;
     try {
         con.query(
@@ -70,7 +72,6 @@ const create_student=(req,res)=>{
 }
 
 const updateStudent=(req,res)=>{
-    console.log(req.body);
      let {user_id,username,email,role,password_hash,first_name,last_name}=req.body;
     try {
         con.query(
@@ -89,6 +90,25 @@ const updateStudent=(req,res)=>{
     } catch (error) {
         console.log(error);
         res.status(400).json({error:error})
+    }
+}
+
+const deleteStudent=(req,res)=>{
+    const id=req.params.id;
+    try {
+        con.query(
+            `DELETE FROM users WHERE user_id = ?`,
+            [id],
+            (err,result)=>{
+                if(err){
+                    res.status(400).json({error:err});
+                }else{
+                    res.status(200).json(result);
+                }
+            }
+        );
+    } catch (error) {
+        res.status(500).json({error:error})
     }
 }
 
@@ -155,6 +175,7 @@ export default{
     students,
     create_student,
     updateStudent,
+    deleteStudent,
     course_materials,
     course_material
 }
