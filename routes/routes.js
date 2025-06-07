@@ -11,6 +11,7 @@ Router.get('/students',scontroller.students)
 Router.get("/students/:id",scontroller.student)
 Router.post("/student",scontroller.create_student)
 Router.put('/update_student',scontroller.updateStudent)
+Router.delete("/students/:id",scontroller.deleteStudent)
 // Course Materails
 Router.get("/course_materials",scontroller.course_materials)
 Router.get("/course_materials/:id",scontroller.course_material)
