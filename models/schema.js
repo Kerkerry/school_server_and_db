@@ -1,4 +1,4 @@
-import { GraphQLEnumType, GraphQLFloat, GraphQLID, GraphQLInt, GraphQLList, GraphQLObjectType, GraphQLSchema, GraphQLString } from "graphql";
+import { GraphQLEnumType, GraphQLFloat, GraphQLID, GraphQLInt, GraphQLList, GraphQLObjectType,GraphQLInputObjectType, GraphQLNonNull, GraphQLSchema, GraphQLString } from "graphql";
 
 // --- Mock Database (Simulating your MySQL data) ---
 // In a real application, this would be your actual database connection and queries.
@@ -170,7 +170,7 @@ const CourseType=new GraphQLObjectType(
                 },
                 // Relationship to Assignments (One-to-Many)
                 assignments:{
-                    type:new GraphQLList(AsignmentType),
+                    type:new GraphQLList(AssignmentType),
                     resolve: (parent)=>{
                         return mockDatabase.assignments.filter(assignment=>assignment.course_id=parent.course_id)
                     }
@@ -396,6 +396,66 @@ const CourseMaterialDetailType=new GraphQLObjectType(
     }
 )
 
+// --- Input Types for Mutations ---
+
+// Input type for creating a new Assignment
+const AssignmentInput = new GraphQLInputObjectType({
+  name: 'AssignmentInput',
+  description: 'Input fields for creating a new assignment.',
+  fields: {
+    courseId: { type: new GraphQLNonNull(GraphQLID) }, // Required: The course this assignment belongs to
+    instructorId: { type: new GraphQLNonNull(GraphQLID) }, // Required: The instructor creating the assignment
+    title: { type: new GraphQLNonNull(GraphQLString) }, // Required
+    description: { type: GraphQLString },
+    dueDate: { type: new GraphQLNonNull(GraphQLString) }, // Required, e.g., "YYYY-MM-DD"
+    instructions: { type: GraphQLString },
+    gradingCriteria: { type: GraphQLString },
+    assignmentType: { type: new GraphQLNonNull(AssignmentTypes) }, // Required
+    maxPoints: { type: GraphQLFloat },
+    gradingScale: { type: GraphQLString },
+  },
+});
+
+// --- Root Mutation Type ---
+// This is the entry point for all mutations (data modifications).
+const RootMutation = new GraphQLObjectType({
+  name: 'RootMutationType',
+  description: 'The root mutation type for creating, updating, and deleting data.',
+  fields: {
+    createAssignment: {
+      type: AssignmentType, // The type of data that the mutation will return
+      description: 'Creates a new assignment.',
+      args: {
+        input: { type: new GraphQLNonNull(AssignmentInput) }, // The input object for the assignment
+      },
+      resolve: (parent, { input }) => {
+        // In a real application, you would interact with your database here
+        // to insert the new assignment record.
+        const newAssignment = {
+          assignment_id: mockDatabase.assignments.length > 0 ? Math.max(...mockDatabase.assignments.map(a => a.assignment_id)) + 1 : 1, // Simple ID generation
+          course_id: parseInt(input.courseId),
+          instructor_id: parseInt(input.instructorId),
+          title: input.title,
+          description: input.description || null,
+          due_date: input.dueDate,
+          instructions: input.instructions || null,
+          grading_criteria: input.gradingCriteria || null,
+          assignment_type: input.assignmentType,
+          max_points: input.maxPoints || null,
+          grading_scale: input.gradingScale || null,
+        };
+
+        mockDatabase.assignments.push(newAssignment); // Add to mock database
+
+        // Return the newly created assignment object
+        return newAssignment;
+      },
+    },
+  },
+  
+});
+
+
 // --- Root Query Type ---
 // This is the entry point for all queries.
 const RootQuery=new GraphQLObjectType(
@@ -469,6 +529,7 @@ const RootQuery=new GraphQLObjectType(
 const schema=new GraphQLSchema(
     {
         query:RootQuery,
+        mutation:RootMutation,
     }
 )
 
