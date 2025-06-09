@@ -780,7 +780,10 @@ const RootQuery=new GraphQLObjectType(
         fields:{
             user:{
                 type:UserType,
-                args:{userId:{type:GraphQLID}},
+                args:{
+                    userId:{type:GraphQLID},
+                    username: { type: GraphQLString, description: 'Optional filter by username (case-insensitive).' },
+                },
                 resolve:(parent,args)=>{
                     // return users.find(user=>user.user_id===parseInt(args.userId))
                     return users()
@@ -794,7 +797,17 @@ const RootQuery=new GraphQLObjectType(
 
             users:{
                 type:new GraphQLList(UserType),
-                resolve:async()=>await users()
+                args:{
+                    role: { type: UserRoleType, description: 'Optional filter by user role (Student, Instructor, Admin).' },
+                },
+                resolve:(parent,args)=>{
+                     return users()
+                            .then(usersList=>usersList.filter(user=>user.role===args.role)
+                                ).catch(error => {
+                                            console.error("\nFailed to fetch users (via .catch):", error.message);
+                                            return error
+                                        });
+                }
             },
 
             course:{
