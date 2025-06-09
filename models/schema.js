@@ -1,7 +1,49 @@
 import { GraphQLEnumType, GraphQLFloat, GraphQLID, GraphQLInt, GraphQLList, GraphQLObjectType,GraphQLInputObjectType, GraphQLNonNull, GraphQLSchema, GraphQLString } from "graphql";
-
+import connection from './connection.js'
 // --- Mock Database (Simulating your MySQL data) ---
 // In a real application, this would be your actual database connection and queries.
+
+const users=()=>{
+    return new Promise((resolve,reject)=>{
+        connection.query(
+            `SELECT * FROM users`,
+            (err,result)=>{
+                if(err){
+                    console.error("Database query error:", err);
+                    reject(err);
+                }else{               
+                    resolve(result);
+                }
+            }
+        )
+    })
+}
+
+const courses=()=>{
+    return new Promise((resolve,reject)=>{
+        connection.query(
+            `SELECT * FROM courses`,
+            (err,result)=>{
+                if(err){
+                    console.error("Database query error:", err);
+                    reject(err); 
+                }else{
+                    resolve(result)
+                }
+            }
+        )
+    })
+}
+// users0()
+// .then(usersList=>{
+//     console.log("\nFetched users (via .then):");
+//     console.log(usersList);
+// })
+// .catch(error => {
+//         console.error("\nFailed to fetch users (via .catch):", error.message);
+//     });
+
+
 const mockDatabase = {
   users: [
     { user_id: 1, username: 'johndoe', email: 'john.doe@university.edu', role: 'Student', first_name: 'John', last_name: 'Doe' },
@@ -122,7 +164,12 @@ const UserType=new GraphQLObjectType(
                     type:new GraphQLList(CourseType),
                     resolve:(parent)=>{
                         if(parent.role=="Instructor"){
-                            return mockDatabase.courses.filter(course=>course.instructor_id === parent.user_id)
+                            return courses()
+                                .then(coursesList=>coursesList.filter(course=>course.instructor_id === parent.user_id)
+                            ).catch(error=>{
+                                    console.error("\nFailed to fetch users (via .catch):", error.message);
+                                    return error
+                            })
                         }
                         return []
                     }
@@ -157,8 +204,14 @@ const CourseType=new GraphQLObjectType(
                 // Relationship to Instructor (Many-to-One)
                 instructor: {
                     type:UserType,
-                    resolve: (parent)=>{
-                        return mockDatabase.users.find(user=>user.user_id == parent.instructor_id)
+                    resolve: async (parent)=>{
+                     try {
+                            const usersList = await users();
+                            return usersList.find(user => user.user_id == parent.instructor_id);
+                        } catch (error) {
+                            console.error("\nFailed to fetch users (via .catch):", error.message);
+                            return error;
+                        }
                     }
                 },
                 // Relationship to Enrollments (One-to-Many)
@@ -193,15 +246,28 @@ const EnrollmentType=new GraphQLObjectType(
                 // Relationship to Student (Many-to-One)
                 student:{
                     type:UserType,
-                    resolve:(parent)=>{
-                        return mockDatabase.users.find(user=>user.user_id===parent.student_id);
+                    resolve:async (parent)=>{
+                        // return users.find(user=>user.user_id===parent.student_id);
+                    try {
+                            const usersList = await users();
+                            return usersList.find(user => user.user_id == parent.student_id);
+                        } catch (error) {
+                            console.error("\nFailed to fetch users (via .catch):", error.message);
+                            return error;
+                        }
+                        
                     }
                 },
                 // Relationship to Course (Many-to-One)
                 course:{
                     type:CourseType,
                     resolve:(parent)=>{
-                        return mockDatabase.courses.find(course=>course.course_id ===parent.course_id)
+                        return courses()
+                                .then(coursesList=>coursesList.find(course=>course.course_id ===parent.course_id)
+                            ).catch(error=>{
+                                    console.error("\nFailed to fetch users (via .catch):", error.message);
+                                    return error
+                            })
                     }
                 }
 
@@ -230,15 +296,29 @@ const AssignmentType=new GraphQLObjectType(
                 //Many-to-One with Courses (many assignments belong to one course).
                 course:{
                     type:CourseType,
-                    resolve:(parent)=>{
-                        return mockDatabase.courses.find(course=>course.course_id===parent.course_id)
+                    resolve:async (parent)=>{
+                        try {
+                            const coursesList = await courses();
+                            return coursesList.find(course => course.course_id === parent.course_id);
+                        } catch (error) {
+                            console.error("\nFailed to fetch users (via .catch):", error.message);
+                            return error;
+                        }
                     }
                 },
                 // Many-to-One with Users (many assignments are created by one instructor).
                 instructor:{
                     type:UserType,
-                    resolve:(parent)=>{
-                        return mockDatabase.users.find(user=>user.user_id===parent.instructor_id)
+                    resolve:async (parent)=>{
+                        // return users.find(user=>user.user_id===parent.instructor_id)
+                        try {
+                            const usersList = await users();
+                            return usersList.find(user => user.user_id == parent.instructor_id);
+                        } catch (error) {
+                            console.error("\nFailed to fetch users (via .catch):", error.message);
+                            return error;
+                        }
+                        
                     }
                 },
                 // One-to-Many with Submissions (an assignment has many submissions).
@@ -282,8 +362,16 @@ const SubmissionType=new GraphQLObjectType(
                 // Many-to-One with Users (many submissions are made by one student).
                 student:{
                     type:UserType,
-                    resolve:(parent)=>{
-                        return mockDatabase. users.find(user=>user.user_id===parent.student_id)
+                    resolve:async (parent)=>{
+                        // return users.find(user=>user.user_id===parent.student_id)
+                        try {
+                            const usersList = await users();
+                            return usersList.find(user => user.user_id == parent.student_id);
+                        } catch (error) {
+                            console.error("\nFailed to fetch users (via .catch):", error.message);
+                            return error;
+                        }
+                        
                     }
                 },
                 // One-to-One with Grades (each submission can have one grade).
@@ -320,8 +408,15 @@ const GradeType=new GraphQLObjectType(
                 // Many-to-One with Users (many grades are given by one instructor).
                 gradedBy:{
                     type:UserType,
-                    resolve:(parent)=>{
-                        return mockDatabase. users.find(user=>user.user_id===parent.user_id)
+                    resolve:async (parent)=>{
+                        // return users.find(user=>user.user_id===parent.user_id)
+                         try {
+                            const usersList = await users();
+                            return usersList.find(user => user.user_id == parent.user_id);
+                        } catch (error) {
+                            console.error("\nFailed to fetch users (via .catch):", error.message);
+                            return error;
+                        }
                     }
                 }
             }
@@ -363,7 +458,12 @@ const CourseMaterialDetailType=new GraphQLObjectType(
                 courseCode:{
                     type:GraphQLString,
                     resolve:(parent)=>{
-                        let course=mockDatabase. courses.find(course=>course.course_id===parent.course_id);
+                        let course=courses()
+                                .then(coursesList=>coursesList.find(course=>course.course_id ===parent.course_id)
+                            ).catch(error=>{
+                                    console.error("\nFailed to fetch users (via .catch):", error.message);
+                                    return error
+                            })
                         return course ? course.course_code:null
                     }
                 },
@@ -371,7 +471,12 @@ const CourseMaterialDetailType=new GraphQLObjectType(
                 courseName:{
                     type:GraphQLString,
                     resolve:(parent)=>{
-                        let course=mockDatabase. courses.find(course=>course.course_id===parent.course_id);
+                        let course=courses()
+                                .then(coursesList=>coursesList.find(course=>course.course_id ===parent.course_id)
+                            ).catch(error=>{
+                                    console.error("\nFailed to fetch users (via .catch):", error.message);
+                                    return error
+                            })
                         return course ? course.course_name:null
                     }
                 },
@@ -379,7 +484,13 @@ const CourseMaterialDetailType=new GraphQLObjectType(
                 uploadedBy:{
                     type:GraphQLString,
                     resolve:(parent)=>{
-                        let user=mockDatabase. users.find(user=>user.user_id===parent.uploaded_by)
+                        // let user=users.find(user=>user.user_id===parent.uploaded_by)
+                        let user=users()
+                            .then(usersList=>usersList.find(user=>user.user_id===parent.uploaded_by)
+                                ).catch(error => {
+                                            console.error("\nFailed to fetch users (via .catch):", error.message);
+                                            return error
+                                        });
                         return user ? user.username :null
                     }
                 },
@@ -387,7 +498,13 @@ const CourseMaterialDetailType=new GraphQLObjectType(
                 uploadedByRole:{
                     type:GraphQLString,
                     resolve:(parent)=>{
-                        let user=mockDatabase. users.find(user=>user.user_id===parent.uploaded_by)
+                        // let user=users.find(user=>user.user_id===parent.uploaded_by)
+                        let user=users()
+                            .then(usersList=>usersList.find(user=>user.user_id===parent.uploaded_by)
+                                ).catch(error => {
+                                            console.error("\nFailed to fetch users (via .catch):", error.message);
+                                            return error
+                                        });
                         return user ? user.role :null
                     }
                 }
@@ -397,7 +514,6 @@ const CourseMaterialDetailType=new GraphQLObjectType(
 )
 
 // --- Input Types for Mutations ---
-
 // Input type for creating a new Assignment
 const AssignmentInput = new GraphQLInputObjectType({
   name: 'AssignmentInput',
@@ -467,26 +583,45 @@ const RootQuery=new GraphQLObjectType(
                 type:UserType,
                 args:{userId:{type:GraphQLID}},
                 resolve:(parent,args)=>{
-                    return mockDatabase. users.find(user=>user.user_id===parseInt(args.userId))
+                    // return users.find(user=>user.user_id===parseInt(args.userId))
+                    return users()
+                            .then(usersList=>usersList.find(user=>user.user_id===parseInt(args.userId))
+                                ).catch(error => {
+                                            console.error("\nFailed to fetch users (via .catch):", error.message);
+                                            return error
+                                        });
                 }
             },
 
             users:{
                 type:new GraphQLList(UserType),
-                resolve:()=>mockDatabase.users
+                resolve:async()=>await users()
             },
 
             course:{
                 type:CourseType,
                 args:{courseId:{type:GraphQLID}},
                 resolve:(parent,args)=>{
-                    return mockDatabase. courses.find(course=>course.course_id===parseInt(args.courseId))
+                    courses()
+                                .then(coursesList=>coursesList.find(course=>course.course_id ===parent.course_id)
+                            ).catch(error=>{
+                                    console.error("\nFailed to fetch users (via .catch):", error.message);
+                                    return error
+                            })
                 }
             },
 
             courses:{
                 type:new GraphQLList(CourseType),
-                resolve:()=>mockDatabase.courses
+                resolve:async ()=>{
+                    try {
+                        const coursesList = await courses();
+                        return coursesList;
+                    } catch (error) {
+                        console.error("\nFailed to fetch users (via .catch):", error.message);
+                        return error;
+                    }
+                }
             },
 
             assignment:{
