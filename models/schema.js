@@ -1,7 +1,6 @@
 import { GraphQLEnumType, GraphQLFloat, GraphQLID, GraphQLInt, GraphQLList, GraphQLObjectType,GraphQLInputObjectType, GraphQLNonNull, GraphQLSchema, GraphQLString } from "graphql";
 import connection from './connection.js'
-// --- Mock Database (Simulating your MySQL data) ---
-// In a real application, this would be your actual database connection and queries.
+
 
 const users=()=>{
     return new Promise((resolve,reject)=>{
@@ -34,15 +33,176 @@ const courses=()=>{
         )
     })
 }
-// users0()
-// .then(usersList=>{
-//     console.log("\nFetched users (via .then):");
-//     console.log(usersList);
-// })
-// .catch(error => {
-//         console.error("\nFailed to fetch users (via .catch):", error.message);
-//     });
 
+const enrollments=()=>{
+    return new Promise((resolve,reject)=>{
+        connection.query(
+            `SELECT * FROM Enrollments`,
+            (err,result)=>{
+                if(err){
+                    console.error("Database query error:", err);
+                    reject(err)
+                }else{
+                    resolve(result)
+                }
+            }
+        )
+    })
+}
+
+const courseModules = ()=>{
+    return new Promise((resolve,reject)=>{
+        connection.query(
+            `SELECT * FROM Course_Modules`,
+            (err,result)=>{
+                if(err){
+                    console.error("Database query error:", err);
+                    reject(err)
+                }else{
+                    resolve(result)
+                }
+            }
+        )
+    })
+}
+
+const courseMaterials=()=>{
+    return new Promise((resolve,reject)=>{
+        connection.query(
+            `SELECT * FROM Course_Materials`,
+            (err,result)=>{
+                    if(err){
+                        console.error("Database query error:", err);
+                        reject(err)
+                    }else{
+                        resolve(result)
+                    }
+            }
+        )
+    })
+} 
+
+const assignments=()=>{
+    return new Promise((resolve,reject)=>{
+        connection.query(
+            `SELECT * FROM Assignments`,
+            (err,result)=>{
+                    if(err){
+                        console.error("Database query error:", err);
+                        reject(err)
+                    }else{
+                        resolve(result)
+                    }
+            }
+        )
+    })
+}
+
+const submissions=()=>{
+    return new Promise((resolve,reject)=>{
+        connection.query(
+            `SELECT * FROM Submissions`,
+            (err,result)=>{
+                    if(err){
+                        console.error("Database query error:", err);
+                        reject(err)
+                    }else{
+                        resolve(result)
+                    }
+            }
+        )
+    })
+}
+
+const grades=()=>{
+    return new Promise((resolve,reject)=>{
+        connection.query(
+            `SELECT * FROM Grades`,
+            (err,result)=>{
+                    if(err){
+                        console.error("Database query error:", err);
+                        reject(err)
+                    }else{
+                        resolve(result)
+                    }
+            }
+        )
+    })
+}
+
+const announcements=()=>{
+    return new Promise(
+        (resolve,reject)=>{
+            connection.query(
+            `SELECT * FROM Announcements`,
+                (err,result)=>{
+                        if(err){
+                            console.error("Database query error:", err);
+                            reject(err)
+                        }else{
+                            resolve(result)
+                        }
+                }
+            )
+        }
+    )
+} 
+
+const discussionForums=()=>{
+    return new Promise((resolve,reject)=>{
+        connection.query(
+            `SELECT * FROM Discussion_Forums`,
+            (err,result)=>{
+                    if(err){
+                        console.error("Database query error:", err);
+                        reject(err)
+                    }else{
+                        resolve(result)
+                    }
+            }
+        )
+    })
+} 
+
+const discussionPosts =()=>{
+    return new Promise(
+        (resolve,reject)=>{
+            connection.query(
+                `SELECT * FROM Discussion_Posts`,
+                (err,result)=>{
+                    if(err){
+                        console.error("Database query error:", err);
+                        reject(err)
+                    }else{
+                        resolve(result)
+                    }
+                }
+            )
+        }
+    )
+}
+
+const messages=()=>{
+    return new Promise(
+        (resolve,reject)=>{
+            connection.query(
+            `SELECT * FROM Messages`,
+            (err,result)=>{
+                    if(err){
+                        console.error("Database query error:", err);
+                        reject(err)
+                    }else{
+                        resolve(result)
+                    }
+            }
+        )
+        }
+    )
+}
+
+
+// --- Mock Database (Simulating your MySQL data) ---
+// In a real application, this would be your actual database connection and queries.
 
 const mockDatabase = {
   users: [
@@ -166,10 +326,10 @@ const UserType=new GraphQLObjectType(
                         if(parent.role=="Instructor"){
                             return courses()
                                 .then(coursesList=>coursesList.filter(course=>course.instructor_id === parent.user_id)
-                            ).catch(error=>{
-                                    console.error("\nFailed to fetch users (via .catch):", error.message);
-                                    return error
-                            })
+                                    ).catch(error=>{
+                                            console.error("\nFailed to fetch users (via .catch):", error.message);
+                                            return error
+                                    })
                         }
                         return []
                     }
@@ -178,7 +338,13 @@ const UserType=new GraphQLObjectType(
                     type:new GraphQLList(EnrollmentType),
                     resolve:(parent)=>{
                         if(parent.role=='Student'){
-                            return mockDatabase.enrollments.filter(enrollment=>enrollment.student_id === parent.user_id)
+                            // return mockDatabase.enrollments.filter(enrollment=>enrollment.student_id === parent.user_id)
+                            return enrollments()
+                                .then(enrollmentList=>enrollmentList.filter(enrollment=>enrollment.student_id === parent.user_id))
+                                    .catch(error=>{
+                                        console.error("\nFailed to fetch users (via .catch):", error.message);
+                                        return error
+                                    })
                         }
                         return []
                     }
@@ -218,14 +384,26 @@ const CourseType=new GraphQLObjectType(
                 enrollments:{
                     type:new GraphQLList(EnrollmentType),
                     resolve:(parent)=>{
-                        return mockDatabase.enrollments.filter(enrollment=>enrollment.course_id === parent.course_id)
+                        // return mockDatabase.enrollments.filter(enrollment=>enrollment.course_id === parent.course_id)
+                        return enrollments()
+                            .then(enrollmentsList=>enrollmentsList.filter(enrollment=>enrollment.course_id === parent.course_id))
+                                .catch(error=>{
+                                    console.error("\nFailed to fetch users (via .catch):", error.message);
+                                    return error;
+                                })
                     }
                 },
                 // Relationship to Assignments (One-to-Many)
                 assignments:{
                     type:new GraphQLList(AssignmentType),
                     resolve: (parent)=>{
-                        return mockDatabase.assignments.filter(assignment=>assignment.course_id=parent.course_id)
+                        // return mockDatabase.assignments.filter(assignment=>assignment.course_id=parent.course_id)
+                        return assignments()
+                            .then(assignmentsList=>assignmentsList.filter(assignment=>assignment.course_id=parent.course_id))
+                                .catch(error=>{
+                                    console.error("\nFailed to fetch users (via .catch):", error.message);
+                                    return error;
+                                })
                     }
                 }
             }
@@ -263,11 +441,11 @@ const EnrollmentType=new GraphQLObjectType(
                     type:CourseType,
                     resolve:(parent)=>{
                         return courses()
-                                .then(coursesList=>coursesList.find(course=>course.course_id ===parent.course_id)
-                            ).catch(error=>{
-                                    console.error("\nFailed to fetch users (via .catch):", error.message);
-                                    return error
-                            })
+                                .then(coursesList=>coursesList.find(course=>course.course_id ===parent.course_id))
+                                    .catch(error=>{
+                                            console.error("\nFailed to fetch users (via .catch):", error.message);
+                                            return error
+                                    })
                     }
                 }
 
@@ -325,7 +503,8 @@ const AssignmentType=new GraphQLObjectType(
                 submissions:{
                     type:new GraphQLList(SubmissionType),
                     resolve:(parent,{studentId})=>{
-                        let submissions=mockDatabase. submissions.filter(submission=>submission.assignment_id===parent.assignment_id)
+                        // let submissions=mockDatabase. submissions.filter(submission=>submission.assignment_id===parent.assignment_id)
+                        let submissions=submissions().then(submissionsList=>submissionsList.filter(submission=>submission.assignment_id===parent.assignment_id)).catch(error=>error)
                         if(studentId){
                             return submissions= submissions.filter(sub=>sub.student_id===parseInt(studentId));
                         }
@@ -356,7 +535,13 @@ const SubmissionType=new GraphQLObjectType(
                 assignment:{
                     type:AssignmentType,
                     resolve:(parent)=>{
-                        return mockDatabase. assignments.find(assignment=>assignment.assignment_id==parent.assignment_id)
+                        // return mockDatabase. assignments.find(assignment=>assignment.assignment_id==parent.assignment_id)
+                        return assignments()
+                                .then(assignmentsList=>assignmentsList.find(assignment=>assignment.assignment_id==parent.assignment_id))
+                                    .catch(error=>{
+                                        console.error("\nFailed to fetch users (via .catch):", error.message);
+                                        return error;
+                                    })
                     }
                 },
                 // Many-to-One with Users (many submissions are made by one student).
@@ -378,7 +563,13 @@ const SubmissionType=new GraphQLObjectType(
                 grade:{
                     type:GradeType,
                     resolve:(parent)=>{
-                        return mockDatabase. grades.find(grade=>grade.grade_id===parent.grade_id)
+                        // return mockDatabase. grades.find(grade=>grade.grade_id===parent.grade_id)
+                        return grades()
+                                .then(gradesList=>gradesList.find(grade=>grade.grade_id===parent.grade_id))
+                                    .catch(error=>{
+                                        console.error("\nFailed to fetch users (via .catch):", error.message);
+                                        return error;
+                                    })
                     }
                 }
             }
@@ -402,7 +593,13 @@ const GradeType=new GraphQLObjectType(
                 submission:{
                     type:SubmissionType,
                     resolve:(parent)=>{
-                        return mockDatabase. submissions.find(sub=>sub.submission_id===parent.submission_id)
+                        // return mockDatabase. submissions.find(sub=>sub.submission_id===parent.submission_id)
+                        return submissions()
+                            .then(submissionsList=>submissionsList.find(sub=>sub.submission_id===parent.submission_id))
+                                .catch(error=>{
+                                        console.error("\nFailed to fetch users (via .catch):", error.message);
+                                        return error;
+                                })
                     }
                 },
                 // Many-to-One with Users (many grades are given by one instructor).
@@ -442,7 +639,8 @@ const CourseMaterialDetailType=new GraphQLObjectType(
                 moduleName:{
                     type:GraphQLString,
                     resolve:(parent)=>{
-                        let module=mockDatabase.course_modules.find(m=>m.module_id===material.module_id)
+                        // let module=mockDatabase.course_modules.find(m=>m.module_id===material.module_id)
+                        let module=courseModules().then(modules=>modules.find(m=>m.module_id===material.module_id)).catch(error=>error)
                         return module ? module.module_name:null
                     }
                 },
@@ -450,7 +648,8 @@ const CourseMaterialDetailType=new GraphQLObjectType(
                 moduleOrder:{
                     type:GraphQLInt,
                     resolve:(material)=>{
-                        let module=mockDatabase.course_modules.find(m=>m.module_id===material.module_id)
+                        // let module=mockDatabase.course_modules.find(m=>m.module_id===material.module_id)
+                        let module=courseModules().then(modules=>modules.find(m=>m.module_id===material.module_id)).catch(error=>error)
                         return module ? module.module_order : null
                     }
                 },
@@ -472,11 +671,11 @@ const CourseMaterialDetailType=new GraphQLObjectType(
                     type:GraphQLString,
                     resolve:(parent)=>{
                         let course=courses()
-                                .then(coursesList=>coursesList.find(course=>course.course_id ===parent.course_id)
-                            ).catch(error=>{
-                                    console.error("\nFailed to fetch users (via .catch):", error.message);
-                                    return error
-                            })
+                                .then(coursesList=>coursesList.find(course=>course.course_id ===parent.course_id))
+                                    .catch(error=>{
+                                            console.error("\nFailed to fetch users (via .catch):", error.message);
+                                            return error
+                                        })
                         return course ? course.course_name:null
                     }
                 },
