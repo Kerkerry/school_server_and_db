@@ -1,4 +1,53 @@
-import { GraphQLEnumType, GraphQLFloat, GraphQLID, GraphQLInt, GraphQLList, GraphQLObjectType, GraphQLString } from "graphql";
+import { GraphQLEnumType, GraphQLFloat, GraphQLID, GraphQLInt, GraphQLList, GraphQLObjectType, GraphQLSchema, GraphQLString } from "graphql";
+
+// --- Mock Database (Simulating your MySQL data) ---
+// In a real application, this would be your actual database connection and queries.
+const mockDatabase = {
+  users: [
+    { user_id: 1, username: 'johndoe', email: 'john.doe@university.edu', role: 'Student', first_name: 'John', last_name: 'Doe' },
+    { user_id: 2, username: 'janesmith', email: 'jane.smith@university.edu', role: 'Student', first_name: 'Jane', last_name: 'Smith' },
+    { user_id: 6, username: 'dr.evans', email: 'e.evans@university.edu', role: 'Instructor', first_name: 'Emily', last_name: 'Evans' },
+    { user_id: 7, username: 'prof.davis', email: 'd.davis@university.edu', role: 'Instructor', first_name: 'David', last_name: 'Davis' },
+  ],
+  courses: [
+    { course_id: 101, course_name: 'Intro to CS', course_code: 'CS101', instructor_id: 6, description: 'Fundamentals of programming.', credits: 3.0 },
+    { course_id: 102, course_name: 'Calculus I', course_code: 'MA201', instructor_id: 7, description: 'Differential and integral calculus.', credits: 4.0 },
+    { course_id: 103, course_name: 'Database Systems', course_code: 'CS305', instructor_id: 6, description: 'Relational databases.', credits: 3.0 },
+  ],
+  enrollments: [
+    { enrollment_id: 1, student_id: 1, course_id: 101, status: 'Enrolled' },
+    { enrollment_id: 2, student_id: 1, course_id: 102, status: 'Enrolled' },
+    { enrollment_id: 3, student_id: 2, course_id: 101, status: 'Enrolled' },
+  ],
+  assignments: [
+    { assignment_id: 1, course_id: 101, instructor_id: 6, title: 'PA1: Factorial', description: 'Write a Python program.', due_date: '2024-09-20', max_points: 100.00 },
+    { assignment_id: 2, course_id: 101, instructor_id: 6, title: 'Quiz 1', description: 'MCQ on Python basics.', due_date: '2024-09-25', max_points: 20.00 },
+    { assignment_id: 3, course_id: 102, instructor_id: 7, title: 'Calc HW1', description: 'Limits and continuity problems.', due_date: '2024-09-22', max_points: 50.00 },
+  ],
+  submissions: [
+    { submission_id: 1, assignment_id: 1, student_id: 1, submission_date: '2024-09-19', file_path: '/sub/pa1_john.py' },
+    { submission_id: 2, assignment_id: 1, student_id: 2, submission_date: '2024-09-20', file_path: '/sub/pa1_jane.py' },
+    { submission_id: 3, assignment_id: 3, student_id: 1, submission_date: '2024-09-21', file_path: '/sub/calc_hw1_john.pdf' },
+  ],
+  grades: [
+    { grade_id: 1, submission_id: 1, score: 95.00, feedback_text: 'Excellent work!', graded_by: 6 },
+    { grade_id: 2, submission_id: 2, score: 88.00, feedback_text: 'Good attempt.', graded_by: 6 },
+    { grade_id: 3, submission_id: 3, score: 45.00, feedback_text: 'Review problem 3.', graded_by: 7 },
+  ],
+  course_modules: [ // Added mock data for course_modules
+    { module_id: 1, course_id: 101, module_name: 'Introduction to Programming', module_order: 1 },
+    { module_id: 2, course_id: 101, module_name: 'Data Types and Variables', module_order: 2 },
+    { module_id: 3, course_id: 102, module_name: 'Limits and Continuity', module_order: 1 },
+    { module_id: 4, course_id: 103, module_name: 'Relational Model', module_order: 1 },
+  ],
+  course_materials: [ // Added mock data for course_materials
+    { material_id: 1, course_id: 101, module_id: 1, title: 'Lecture 1 Slides', description: 'Intro to CS concepts.', file_path: '/materials/lec1.pdf', file_type: 'PDF', uploaded_by: 6 },
+    { material_id: 2, course_id: 101, module_id: 2, title: 'Python Basics Video', description: 'Video on Python variables.', file_path: '/materials/py_video.mp4', file_type: 'MP4', uploaded_by: 6 },
+    { material_id: 3, course_id: 102, module_id: 3, title: 'Calculus Notes', description: 'Notes on limits.', file_path: '/materials/calc_notes.pdf', file_type: 'PDF', uploaded_by: 7 },
+    { material_id: 4, course_id: 103, module_id: 4, title: 'Database ERD Guide', description: 'Guide to Entity-Relationship Diagrams.', file_path: '/materials/erd_guide.pdf', file_type: 'PDF', uploaded_by: 6 },
+  ],
+};
+
 
 // --- GraphQL Enum Types for Fixed Values ---
 const UserRoleType=new GraphQLEnumType(
@@ -73,7 +122,7 @@ const UserType=new GraphQLObjectType(
                     type:new GraphQLList(CourseType),
                     resolve:(parent)=>{
                         if(parent.role=="Instructor"){
-                            return course.filter(course=>course.instructor_id === parent.user_id)
+                            return mockDatabase.courses.filter(course=>course.instructor_id === parent.user_id)
                         }
                         return []
                     }
@@ -82,7 +131,7 @@ const UserType=new GraphQLObjectType(
                     type:new GraphQLList(EnrollmentType),
                     resolve:(parent)=>{
                         if(parent.role=='Student'){
-                            return enrollents.filter(enrollment=>enrollment.student_id === parent.user_id)
+                            return mockDatabase.enrollments.filter(enrollment=>enrollment.student_id === parent.user_id)
                         }
                         return []
                     }
@@ -109,21 +158,21 @@ const CourseType=new GraphQLObjectType(
                 instructor: {
                     type:UserType,
                     resolve: (parent)=>{
-                        return users.find(user=>user.user_id == parent.instructor_id)
+                        return mockDatabase.users.find(user=>user.user_id == parent.instructor_id)
                     }
                 },
                 // Relationship to Enrollments (One-to-Many)
                 enrollments:{
                     type:new GraphQLList(EnrollmentType),
                     resolve:(parent)=>{
-                        return enrollments.filter(enrollment=>enrollment.course_id === parent.course_id)
+                        return mockDatabase.enrollments.filter(enrollment=>enrollment.course_id === parent.course_id)
                     }
                 },
                 // Relationship to Assignments (One-to-Many)
                 assignments:{
                     type:new GraphQLList(AsignmentType),
                     resolve: (parent)=>{
-                        return assignments.filter(assignment=>assignment.course_id=parent.course_id)
+                        return mockDatabase.assignments.filter(assignment=>assignment.course_id=parent.course_id)
                     }
                 }
             }
@@ -145,14 +194,14 @@ const EnrollmentType=new GraphQLObjectType(
                 student:{
                     type:UserType,
                     resolve:(parent)=>{
-                        return users.find(user=>user.user_id===parent.student_id);
+                        return mockDatabase.users.find(user=>user.user_id===parent.student_id);
                     }
                 },
                 // Relationship to Course (Many-to-One)
                 course:{
                     type:CourseType,
                     resolve:(parent)=>{
-                        return courses.find(course=>course.course_id ===parent.course_id)
+                        return mockDatabase.courses.find(course=>course.course_id ===parent.course_id)
                     }
                 }
 
@@ -182,23 +231,23 @@ const AssignmentType=new GraphQLObjectType(
                 course:{
                     type:CourseType,
                     resolve:(parent)=>{
-                        return course.find(course=>course.course_id===parent.course_id)
+                        return mockDatabase.courses.find(course=>course.course_id===parent.course_id)
                     }
                 },
                 // Many-to-One with Users (many assignments are created by one instructor).
                 instructor:{
                     type:UserType,
                     resolve:(parent)=>{
-                        return users.find(user=>user.user_id===parent.instructor_id)
+                        return mockDatabase.users.find(user=>user.user_id===parent.instructor_id)
                     }
                 },
                 // One-to-Many with Submissions (an assignment has many submissions).
                 submissions:{
                     type:new GraphQLList(SubmissionType),
                     resolve:(parent,{studentId})=>{
-                        let submissions= submissions.filter(submission=>submission.assignment_id===parent.assignment_id)
+                        let submissions=mockDatabase. submissions.filter(submission=>submission.assignment_id===parent.assignment_id)
                         if(studentId){
-                            submissions= submissions.filter(sub=>sub.student_id===parseInt(studentId));
+                            return submissions= submissions.filter(sub=>sub.student_id===parseInt(studentId));
                         }
                         return submissions;
                     }
@@ -227,21 +276,21 @@ const SubmissionType=new GraphQLObjectType(
                 assignment:{
                     type:AssignmentType,
                     resolve:(parent)=>{
-                        return assignemnts.find(assignment=>assignment.assignment_id==parent.assignment_id)
+                        return mockDatabase. assignments.find(assignment=>assignment.assignment_id==parent.assignment_id)
                     }
                 },
                 // Many-to-One with Users (many submissions are made by one student).
                 student:{
                     type:UserType,
                     resolve:(parent)=>{
-                        return users.find(user=>user.user_id===parent.student_id)
+                        return mockDatabase. users.find(user=>user.user_id===parent.student_id)
                     }
                 },
                 // One-to-One with Grades (each submission can have one grade).
                 grade:{
                     type:GradeType,
                     resolve:(parent)=>{
-                        return grades.find(grade=>grade.grade_id===parent.grade_id)
+                        return mockDatabase. grades.find(grade=>grade.grade_id===parent.grade_id)
                     }
                 }
             }
@@ -265,14 +314,14 @@ const GradeType=new GraphQLObjectType(
                 submission:{
                     type:SubmissionType,
                     resolve:(parent)=>{
-                        return submissions.find(sub=>sub.submission_id===parent.submission_id)
+                        return mockDatabase. submissions.find(sub=>sub.submission_id===parent.submission_id)
                     }
                 },
                 // Many-to-One with Users (many grades are given by one instructor).
                 gradedBy:{
                     type:UserType,
                     resolve:(parent)=>{
-                        return users.find(user=>user.user_id===parent.user_id)
+                        return mockDatabase. users.find(user=>user.user_id===parent.user_id)
                     }
                 }
             }
@@ -298,7 +347,7 @@ const CourseMaterialDetailType=new GraphQLObjectType(
                 moduleName:{
                     type:GraphQLString,
                     resolve:(parent)=>{
-                        let module=course_modules.find(m=>m.module_id===material.module_id)
+                        let module=mockDatabase.course_modules.find(m=>m.module_id===material.module_id)
                         return module ? module.module_name:null
                     }
                 },
@@ -306,7 +355,7 @@ const CourseMaterialDetailType=new GraphQLObjectType(
                 moduleOrder:{
                     type:GraphQLInt,
                     resolve:(material)=>{
-                        let module=course_modules.find(m=>m.module_id===material.module_id)
+                        let module=mockDatabase.course_modules.find(m=>m.module_id===material.module_id)
                         return module ? module.module_order : null
                     }
                 },
@@ -314,7 +363,7 @@ const CourseMaterialDetailType=new GraphQLObjectType(
                 courseCode:{
                     type:GraphQLString,
                     resolve:(parent)=>{
-                        let course= courses.find(course=>course_id===parent.course_id);
+                        let course=mockDatabase. courses.find(course=>course.course_id===parent.course_id);
                         return course ? course.course_code:null
                     }
                 },
@@ -322,23 +371,23 @@ const CourseMaterialDetailType=new GraphQLObjectType(
                 courseName:{
                     type:GraphQLString,
                     resolve:(parent)=>{
-                        let course= courses.find(course=>course_id===parent.course_id);
+                        let course=mockDatabase. courses.find(course=>course.course_id===parent.course_id);
                         return course ? course.course_name:null
                     }
                 },
 
                 uploadedBy:{
-                    type:UserType,
+                    type:GraphQLString,
                     resolve:(parent)=>{
-                        let user= users.find(user=>user.user_id===parent.uploaded_by)
+                        let user=mockDatabase. users.find(user=>user.user_id===parent.uploaded_by)
                         return user ? user.username :null
                     }
                 },
 
                 uploadedByRole:{
-                    type:UserType,
+                    type:GraphQLString,
                     resolve:(parent)=>{
-                        let user= users.find(user=>user.user_id===parent.uploaded_by)
+                        let user=mockDatabase. users.find(user=>user.user_id===parent.uploaded_by)
                         return user ? user.role :null
                     }
                 }
@@ -346,3 +395,81 @@ const CourseMaterialDetailType=new GraphQLObjectType(
         )
     }
 )
+
+// --- Root Query Type ---
+// This is the entry point for all queries.
+const RootQuery=new GraphQLObjectType(
+    {
+        name:"RootQueryType",
+        description:"The root query type",
+        fields:{
+            user:{
+                type:UserType,
+                args:{userId:{type:GraphQLID}},
+                resolve:(parent,args)=>{
+                    return mockDatabase. users.find(user=>user.user_id===parseInt(args.userId))
+                }
+            },
+
+            users:{
+                type:new GraphQLList(UserType),
+                resolve:()=>mockDatabase.users
+            },
+
+            course:{
+                type:CourseType,
+                args:{courseId:{type:GraphQLID}},
+                resolve:(parent,args)=>{
+                    return mockDatabase. courses.find(course=>course.course_id===parseInt(args.courseId))
+                }
+            },
+
+            courses:{
+                type:new GraphQLList(CourseType),
+                resolve:()=>mockDatabase.courses
+            },
+
+            assignment:{
+                type:AssignmentType,
+                args:{assignmentId:{type:GraphQLID}},
+                resolve:(parent,args)=>{
+                    return mockDatabase. assignments.find(assignment=>assignment.assignment_id===parseInt(args.assignmentId))
+                }
+            },
+
+            submission:{
+                type: SubmissionType,
+                args:{submissionId:{type:GraphQLID}},
+                resolve:(parent,args)=>{
+                    return mockDatabase. submissions.find(sub=>sub.submission_id===parseInt(args.submissionId))
+                }
+            },
+
+            grade:{
+                type:GradeType,
+                args:{gradeId:{type:GraphQLID}},
+                resolve:(parent,args)=>{
+                    return mockDatabase. grades.find(grade=>grade.grade_id===parseInt(args.gradeId))
+                }
+            },
+
+            CourseMaterialDetail:{
+                type:CourseMaterialDetailType,
+                args:{materialId:{type:GraphQLID}},
+                resolve:(parent,args)=>{
+                    const material=mockDatabase. course_materials.find(mat=>mat.material_id===parseInt(args.materialId))
+                    return material;
+                }
+            }
+        }
+    }
+)
+
+// --- GraphQL Schema ---
+const schema=new GraphQLSchema(
+    {
+        query:RootQuery,
+    }
+)
+
+export default schema;
