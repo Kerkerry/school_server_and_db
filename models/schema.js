@@ -295,24 +295,51 @@ const CourseMaterialDetailType=new GraphQLObjectType(
                 externalUrl:{type:GraphQLString,resolve:(coursem)=>coursem.external_url},
                 uploadDate :{type:GraphQLString,resolve:(coursem)=>coursem.upload_date },
 
-                moduleOrder:{
-                    type:GraphQLInt,
+                moduleName:{
+                    type:GraphQLString,
                     resolve:(parent)=>{
-                        
+                        let module=course_modules.find(m=>m.module_id===material.module_id)
+                        return module ? module.module_name:null
                     }
                 },
 
-                course:{
-                    type:CourseType,
+                moduleOrder:{
+                    type:GraphQLInt,
+                    resolve:(material)=>{
+                        let module=course_modules.find(m=>m.module_id===material.module_id)
+                        return module ? module.module_order : null
+                    }
+                },
+
+                courseCode:{
+                    type:GraphQLString,
                     resolve:(parent)=>{
-                        return courses.find(course=>course_id===parent.course_id);
+                        let course= courses.find(course=>course_id===parent.course_id);
+                        return course ? course.course_code:null
+                    }
+                },
+
+                courseName:{
+                    type:GraphQLString,
+                    resolve:(parent)=>{
+                        let course= courses.find(course=>course_id===parent.course_id);
+                        return course ? course.course_name:null
                     }
                 },
 
                 uploadedBy:{
                     type:UserType,
                     resolve:(parent)=>{
-                        return users.find(user=>user.user_id===parent.uploaded_by)
+                        let user= users.find(user=>user.user_id===parent.uploaded_by)
+                        return user ? user.username :null
+                    }
+                },
+
+                uploadedByRole:{
+                    type:UserType,
+                    resolve:(parent)=>{
+                        let user= users.find(user=>user.user_id===parent.uploaded_by)
+                        return user ? user.role :null
                     }
                 }
             }
