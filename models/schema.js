@@ -1,7 +1,6 @@
 import { GraphQLEnumType, GraphQLFloat, GraphQLID, GraphQLInt, GraphQLList, GraphQLObjectType,GraphQLInputObjectType, GraphQLNonNull, GraphQLSchema, GraphQLString } from "graphql";
 import connection from './connection.js'
 
-
 const users=()=>{
     return new Promise((resolve,reject)=>{
         connection.query(
@@ -201,6 +200,7 @@ const messages=()=>{
 }
 
 
+
 // --- Mock Database (Simulating your MySQL data) ---
 // In a real application, this would be your actual database connection and queries.
 
@@ -317,7 +317,7 @@ const UserType=new GraphQLObjectType(
                 firstName:{type:GraphQLString,resolve:(user)=>user.first_name},
                 lastName:{type:GraphQLString,resolve:(user)=>user.last_name},
                 role:{type:UserRoleType},
-                password:{type:GraphQLString},
+                password:{type:GraphQLString, resolve:(user)=>user.password_hash},
                 lastLogin:{type:GraphQLString,resolve:(user)=>user.last_login},
                 createAt:{type:GraphQLString,resolve:(user)=>user.created_at},
                 courseTought:{
@@ -785,9 +785,8 @@ const RootQuery=new GraphQLObjectType(
                     username: { type: GraphQLString, description: 'Optional filter by username (case-insensitive).' },
                 },
                 resolve:(parent,args)=>{
-                    // return users.find(user=>user.user_id===parseInt(args.userId))
                     return users()
-                            .then(usersList=>usersList.find(user=>user.user_id===parseInt(args.userId))
+                            .then(usersList=>usersList.find(user=>args.userId ?user.user_id===parseInt(args.userId):user.username===args.username)
                                 ).catch(error => {
                                             console.error("\nFailed to fetch users (via .catch):", error.message);
                                             return error
@@ -812,10 +811,13 @@ const RootQuery=new GraphQLObjectType(
 
             course:{
                 type:CourseType,
-                args:{courseId:{type:GraphQLID}},
+                args:{
+                    courseId:{type:GraphQLID},
+                    courseCode:{type:GraphQLString}
+                },
                 resolve:(parent,args)=>{
-                    courses()
-                                .then(coursesList=>coursesList.find(course=>course.course_id ===parent.course_id)
+                    return courses()
+                                .then(coursesList=>coursesList.find(course=>args.courseId?course.course_id ===parseInt(args.courseId):course.course_code === args.courseCode)
                             ).catch(error=>{
                                     console.error("\nFailed to fetch users (via .catch):", error.message);
                                     return error
