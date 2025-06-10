@@ -1,6 +1,6 @@
 import { GraphQLEnumType, GraphQLFloat, GraphQLID, GraphQLInt, GraphQLList, GraphQLObjectType,GraphQLInputObjectType, GraphQLNonNull, GraphQLSchema, GraphQLString } from "graphql";
 import connection from './connection.js'
-
+// Queries to fetch data from the database
 const users=()=>{
     return new Promise((resolve,reject)=>{
         connection.query(
@@ -199,6 +199,30 @@ const messages=()=>{
     )
 }
 
+
+// Queries to create add data into the database
+// 1. Create assignment
+const createAssignment=(inputData)=>{    
+    return new Promise((resolve,reject)=>{
+        connection.query(
+            `INSERT INTO assignments
+            (course_id,instructor_id,title,description,due_date,instructions,grading_criteria,assignment_type,max_points,grading_scale)
+            VALUES(?,?,?,?,?,?,?,?,?,?)`,
+            [
+                inputData.course_id,inputData.instructor_id,inputData.title,inputData.description,inputData.due_date,inputData.instructions,
+                inputData.grading_criteria,inputData.assignment_type,inputData.max_points,inputData.grading_scale
+            ],
+            (err,result)=>{
+                if(err){
+                    console.error("Error creating assignment: ",err);
+                    reject(err)
+                }else{
+                    resolve(result)
+                }
+            }
+        )
+    })
+}
 
 
 // --- Mock Database (Simulating your MySQL data) ---
@@ -747,7 +771,7 @@ const RootMutation = new GraphQLObjectType({
         // In a real application, you would interact with your database here
         // to insert the new assignment record.
         const newAssignment = {
-          assignment_id: mockDatabase.assignments.length > 0 ? Math.max(...mockDatabase.assignments.map(a => a.assignment_id)) + 1 : 1, // Simple ID generation
+        //   assignment_id: mockDatabase.assignments.length > 0 ? Math.max(...mockDatabase.assignments.map(a => a.assignment_id)) + 1 : 1, // Simple ID generation
           course_id: parseInt(input.courseId),
           instructor_id: parseInt(input.instructorId),
           title: input.title,
@@ -760,10 +784,17 @@ const RootMutation = new GraphQLObjectType({
           grading_scale: input.gradingScale || null,
         };
 
-        mockDatabase.assignments.push(newAssignment); // Add to mock database
+        // mockDatabase.assignments.push(newAssignment); // Add to mock database
+        return createAssignment(newAssignment)
+            .then(result=>{                
+                const insertId=result.insertId;
+                return assignments()
+                    .then(assignmentsList=>assignmentsList.find(assign=>assign.assignment_id===insertId))
+            })
+                .catch(error=>console.log(`Error in a creating assignment mutation: ${error}`))
 
         // Return the newly created assignment object
-        return newAssignment;
+        // return newAssignment;
       },
     },
   },
