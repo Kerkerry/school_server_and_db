@@ -1,5 +1,6 @@
 import { GraphQLEnumType, GraphQLFloat, GraphQLID, GraphQLInt, GraphQLList, GraphQLObjectType,GraphQLInputObjectType, GraphQLNonNull, GraphQLSchema, GraphQLString } from "graphql";
 import connection from './connection.js'
+import bcrypt from 'bcrypt'
 // Queries to fetch data from the database
 const users=()=>{
     return new Promise((resolve,reject)=>{
@@ -226,12 +227,13 @@ const createAssignment=(inputData)=>{
 
 // Create user
 const createUser=(userInput)=>{
+        
     const saltRounds=12;
     return new Promise((resolve,reject)=>{
         // Encrypting password
-        bcrypt.hash(userInput.password, saltRounds, function(err, hash) {
+        bcrypt.hash(userInput.password_hash, saltRounds, function(err, hash) {
                 if(err){
-                    res.status(500).json({error:err});
+                    reject(err)
                 }else{
                     // Database DDL
                         connection.query(
@@ -766,14 +768,14 @@ const CourseMaterialDetailType=new GraphQLObjectType(
 
 // --- Input Types for Mutations ---
 // Input type for creating a new user
-const UserInput=new GraphQLObjectType(
+const UserInput=new GraphQLInputObjectType(
     {
         name:"UserInput",
         description:"Input fields for creating new user",
         fields:{
             username:{type:new GraphQLNonNull(GraphQLString)},
             email:{type:new GraphQLNonNull(GraphQLString)},
-            role:{type:new GraphQLNonNull(GraphQLString)},
+            role:{type:new GraphQLNonNull(UserRoleType)},
             firstName:{type:GraphQLString},
             lastName:{type:GraphQLString},
             password:{type:new GraphQLNonNull(GraphQLString)}
@@ -818,7 +820,7 @@ const RootMutation = new GraphQLObjectType({
                 password_hash:input.password,
                 role:input.role,
                 first_name:input.firstName,
-                last_name:input.last_name
+                last_name:input.lastName
             };
 
             return createUser(newUser)
