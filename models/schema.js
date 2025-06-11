@@ -299,7 +299,23 @@ const createEnrollment=(enrollmentInput)=>{
 
 
 // 5. Create couse modules
-
+const createCourseModule=(cmodule)=>{
+    return new Promise((resolve,reject)=>{
+        connection.query(
+            `INSERT INTO Course_Modules(course_id,module_name,module_order)
+            VALUES(?,?,?)`,
+            [cmodule.course_id,cmodule.module_name,cmodule.module_order],
+            (err,result)=>{
+                if(err){
+                    console.error(`Error creating course_module: ${err}`);
+                    reject(err)
+                }else{
+                    resolve(result)
+                }
+            }
+        )
+    })
+}
 // --- GraphQL Enum Types for Fixed Values ---
 const UserRoleType=new GraphQLEnumType(
     {
@@ -504,7 +520,6 @@ const EnrollmentType=new GraphQLObjectType(
 )
 
 // 4. AssignmentType
-
 const AssignmentType=new GraphQLObjectType(
     {
         name:"AssignmentType",
@@ -761,9 +776,30 @@ const CourseMaterialDetailType=new GraphQLObjectType(
     }
 )
 
+// 8. CourseModuleType
+const CourseModuleType=new GraphQLObjectType(
+    {
+        name:"CourseModuleType",
+        description:"Represents course modules",
+        fields:()=>(
+            {   moduleId:{type:GraphQLID,resolve:(cm)=>cm.module_id},
+                moduleName:{type:GraphQLString,resolve:(cm)=>cm.module_name},
+                moduleOrder:{type:GraphQLInt,resolve:(cm)=>cm.module_order},
+                course:{
+                    type:CourseType,
+                    resolve:(parent)=>{
+                        return courses()
+                            .then(coursesList=>coursesList.find(course=>course.course_id===parent.course_id))
+                                .catch(error=>console.error(`Error finding a course for course module: ${error}`))
+                    }
+                }
+            }
+        )
+    }
+)
 // --- Input Types for Mutations ---
 
-// Input type for creating a new user
+//a) Input type for creating a new user
 const UserInput=new GraphQLInputObjectType(
     {
         name:"UserInput",
@@ -779,7 +815,7 @@ const UserInput=new GraphQLInputObjectType(
     }
 )
 
-// Input type for creating a new course
+//b) Input type for creating a new course
 const CourseInput=new GraphQLInputObjectType(
     {
         name:"CourseInput",
@@ -803,7 +839,7 @@ const CourseInput=new GraphQLInputObjectType(
     }
 )
 
-// Input for creating enrollment
+//c) Input for creating enrollment
 const EnrollmentInput=new GraphQLInputObjectType(
     {
         name:"EnrollmentInput",
@@ -815,7 +851,8 @@ const EnrollmentInput=new GraphQLInputObjectType(
         }
     }
 )
-// Input type for creating a new Assignment
+
+//d) Input type for creating a new Assignment
 const AssignmentInput = new GraphQLInputObjectType({
   name: 'AssignmentInput',
   description: 'Input fields for creating a new assignment.',
@@ -832,6 +869,19 @@ const AssignmentInput = new GraphQLInputObjectType({
     gradingScale: { type: GraphQLString },
   },
 });
+
+// e) Input type for creating a new course module
+const CourseModuleInput=new GraphQLInputObjectType(
+    {
+        name:"CourseModuleInput",
+        description:"Input fields for creating a course module",
+        fields:{
+            courseId:{type:new GraphQLNonNull(GraphQLID)},
+            moduleName:{type:new GraphQLNonNull(GraphQLString)},
+            moduleOrder:{type:GraphQLInt}
+        }
+    }
+)
 
 // --- Root Mutation Type ---
 // This is the entry point for all mutations (data modifications).
@@ -923,6 +973,30 @@ const RootMutation = new GraphQLObjectType({
                 })
                     .catch(error=> console.error(`Error creating enrollment from mutation query: ${error}`))
 
+        }
+    },
+    // Create course module
+    createCourseModule:{
+        type:CourseModuleType,
+        description:"Create new course module",
+        args:{
+            input:{type:new GraphQLNonNull(CourseModuleInput)}
+        },
+        resolve:(parent,{input})=>{
+            const cModule={
+                course_id:parseInt(input.courseId),
+                module_name:input.moduleName,
+                module_order:parseInt(input.moduleOrder)
+            }
+
+            return createCourseModule(cModule)
+                .then(response=>{
+                    const insertId=response.insertId;
+                    return courseModules()
+                        .then(modules=>modules.find(mod=>mod.module_id===insertId))
+                            .catch(error=>console.error(`Error fetching module in the mutation: ${error}`))
+                })
+                    .catch(error=>console.error(`Error creating module in the mutation: ${error}`))
         }
     },
     // Creating assignment
