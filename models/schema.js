@@ -224,6 +224,34 @@ const createAssignment=(inputData)=>{
     })
 }
 
+// Create user
+const createUser=(userInput)=>{
+    const saltRounds=12;
+    return new Promise((resolve,reject)=>{
+        // Encrypting password
+        bcrypt.hash(userInput.password, saltRounds, function(err, hash) {
+                if(err){
+                    res.status(500).json({error:err});
+                }else{
+                    // Database DDL
+                        connection.query(
+                            `INSERT INTO users(username,password_hash,email,role,first_name,last_name)
+                            VALUES(?,?,?,?,?,?)`,
+                            [userInput.username,hash,userInput.email,userInput.role,userInput.first_name,userInput.last_name],
+                            (err,result)=>{
+                                if(err){
+                                    console.error(err);
+                                    reject(err)
+                                }else{
+                                    resolve(result)
+                                }
+                            }
+                        )
+                    
+                }
+        })
+    })
+}
 
 // --- Mock Database (Simulating your MySQL data) ---
 // In a real application, this would be your actual database connection and queries.
@@ -737,6 +765,21 @@ const CourseMaterialDetailType=new GraphQLObjectType(
 )
 
 // --- Input Types for Mutations ---
+// Input type for creating a new user
+const UserInput=new GraphQLObjectType(
+    {
+        name:"UserInput",
+        description:"Input fields for creating new user",
+        fields:{
+            username:{type:new GraphQLNonNull(GraphQLString)},
+            email:{type:new GraphQLNonNull(GraphQLString)},
+            role:{type:new GraphQLNonNull(GraphQLString)},
+            firstName:{type:GraphQLString},
+            lastName:{type:GraphQLString},
+            password:{type:new GraphQLNonNull(GraphQLString)}
+        }
+    }
+)
 // Input type for creating a new Assignment
 const AssignmentInput = new GraphQLInputObjectType({
   name: 'AssignmentInput',
@@ -761,6 +804,34 @@ const RootMutation = new GraphQLObjectType({
   name: 'RootMutationType',
   description: 'The root mutation type for creating, updating, and deleting data.',
   fields: {
+    // Creating user
+    createUser:{
+        type:UserType,
+        description:"Create a new user",
+        args:{
+            input:{type:new GraphQLNonNull(UserInput)}
+        },
+        resolve:(parent,{input})=>{
+            const newUser={
+                username:input.username,
+                email:input.email,
+                password_hash:input.password,
+                role:input.role,
+                first_name:input.firstName,
+                last_name:input.last_name
+            };
+
+            return createUser(newUser)
+                .then(result=>{
+                    const insertId=result.insertId;
+                    return users()
+                        .then(usersList=>usersList.find(user=>user.user_id===insertId))
+                            .catch(error=>error)
+                })
+                    .catch(error=>console.error(`Error in a creating user mutation: ${error}`))
+        }
+    },
+    // Creating assignment
     createAssignment: {
       type: AssignmentType, // The type of data that the mutation will return
       description: 'Creates a new assignment.',
@@ -768,7 +839,6 @@ const RootMutation = new GraphQLObjectType({
         input: { type: new GraphQLNonNull(AssignmentInput) }, // The input object for the assignment
       },
       resolve: (parent, { input }) => {
-        // In a real application, you would interact with your database here
         // to insert the new assignment record.
         const newAssignment = {
         //   assignment_id: mockDatabase.assignments.length > 0 ? Math.max(...mockDatabase.assignments.map(a => a.assignment_id)) + 1 : 1, // Simple ID generation
@@ -791,12 +861,13 @@ const RootMutation = new GraphQLObjectType({
                 return assignments()
                     .then(assignmentsList=>assignmentsList.find(assign=>assign.assignment_id===insertId))
             })
-                .catch(error=>console.log(`Error in a creating assignment mutation: ${error}`))
+                .catch(error=>console.error(`Error in a creating assignment mutation: ${error}`))
 
         // Return the newly created assignment object
         // return newAssignment;
       },
     },
+
   },
   
 });
