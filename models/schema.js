@@ -225,9 +225,9 @@ const createAssignment=(inputData)=>{
     })
 }
 
-// Create user
+//2. Create user
 const createUser=(userInput)=>{
-        
+
     const saltRounds=12;
     return new Promise((resolve,reject)=>{
         // Encrypting password
@@ -252,6 +252,28 @@ const createUser=(userInput)=>{
                     
                 }
         })
+    })
+}
+
+//3. Create course
+const createCourse=(courseInput)=>{
+    return new Promise((resolve,reject)=>{
+        connection.query(
+            `INSERT INTO courses(course_name,course_code,description,instructor_id,
+            schedule,prerequisites,start_date,end_date,credits,level,
+            term,delivery_method,syllabus_url,required_textbooks)
+            VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+            [courseInput.course_name,courseInput.course_code,courseInput.description,courseInput.instructor_id,
+            courseInput.schedule,courseInput.prerequisites,courseInput.start_date,courseInput.end_date,courseInput.credits,courseInput.level,
+            courseInput.term,courseInput.delivery_method,courseInput.syllabus_url,courseInput.required_textbooks],
+           (err,result)=>{
+                if(err){
+                    reject(err);
+                }else{
+                    resolve(result);
+                }
+           } 
+        )
     })
 }
 
@@ -767,6 +789,7 @@ const CourseMaterialDetailType=new GraphQLObjectType(
 )
 
 // --- Input Types for Mutations ---
+
 // Input type for creating a new user
 const UserInput=new GraphQLInputObjectType(
     {
@@ -782,6 +805,31 @@ const UserInput=new GraphQLInputObjectType(
         }
     }
 )
+
+// Input type for creating a new course
+const CourseInput=new GraphQLInputObjectType(
+    {
+        name:"CourseInput",
+        description:"Input fields for creating new course",
+        fields:{
+            courseCode:{type:new GraphQLNonNull(GraphQLString)},
+            courseName:{type:new GraphQLNonNull(GraphQLString)},
+            description:{type:GraphQLString},
+            instructorId:{type:new GraphQLNonNull(GraphQLID)},
+            schedule:{type:new GraphQLNonNull(GraphQLString)},
+            prerequisites:{type:GraphQLString},
+            starDate:{type:GraphQLString},
+            endDate:{type:GraphQLString},
+            credits:{type:GraphQLFloat},
+            level:{type:GraphQLString},
+            term:{type:GraphQLString},
+            deliveryMethod:{type:GraphQLString},
+            syllabusUrl:{type:GraphQLString},
+            requiredTextbooks:{type:GraphQLString}
+        }
+    }
+)
+
 // Input type for creating a new Assignment
 const AssignmentInput = new GraphQLInputObjectType({
   name: 'AssignmentInput',
@@ -831,6 +879,41 @@ const RootMutation = new GraphQLObjectType({
                             .catch(error=>error)
                 })
                     .catch(error=>console.error(`Error in a creating user mutation: ${error}`))
+        }
+    },
+
+    // Create course
+    createCourse:{
+        type:CourseType,
+        description:"Create a new course",
+        args:{input:{type:new GraphQLNonNull(CourseInput)}},
+        resolve:(parent,{input})=>{
+            const newCourse={
+                course_name:input.courseName,
+                course_code:input.courseCode,
+                description:input.description,
+                instructor_id:input.instructorId,
+                schedule:input.schedule,
+                prerequisites:input.prerequisites,
+                start_date:input.starDate,
+                end_date:input.endDate,
+                credits:input.credits,
+                level:input.level,
+                term:input.term,
+                delivery_method:input.deliveryMethod,
+                syllabus_url:input.syllabusUrl,
+                required_textbooks:input.requiredTextbooks
+            }
+
+            return createCourse(newCourse)
+                .then(response=>{
+                    const insertId=response.insertId
+                    return courses()
+                        .then(coursesList=>coursesList.find(course=>course.course_id===insertId))
+                            .catch(error=>console.error(`Error creating course in the mutation: \n${error}`))
+                    })
+                        .catch(error=>console.error(`Error creating course in the mutation: \n${error}`))
+
         }
     },
     // Creating assignment
