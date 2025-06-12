@@ -374,7 +374,7 @@ const createGrade=(grade)=>{
     })
 }
 
-// Create Announcements
+//9. Create Announcements
 const createAnnouncement=(announcement)=>{
     console.log(announcement);
     
@@ -386,6 +386,24 @@ const createAnnouncement=(announcement)=>{
             (err,result)=>{
                 if(err){
                     reject(err);
+                }else{
+                    resolve(result)
+                }
+            }
+        )
+    })
+}
+
+// 10. DiscussionForums 
+const createDiscussionForums=(forums)=>{
+    return new Promise((resolve,reject)=>{
+        connection.query(
+            `INSERT INTO Discussion_Forums(course_id,title,description,created_by)
+            VALUES(?,?,?,?)`,
+            [forums.course_id,forums.title,forums.description,forums.created_by],
+            (err,result)=>{
+                if(err){
+                    reject(err)
                 }else{
                     resolve(result)
                 }
@@ -909,6 +927,38 @@ const AnnouncementType=new GraphQLObjectType(
         )
     }
 )
+
+//10. DiscussionForumType 
+const DiscussionForumType=new GraphQLObjectType(
+    {
+        name:"DiscussionForumType",
+        description:"Represents discussion forum",
+        fields:()=>(
+            {
+                forumId:{type:GraphQLID,resolve:(forum)=>forum.forum_id},
+                title:{type:GraphQLString},
+                description:{type:GraphQLString},
+                createdAt:{type:GraphQLString},
+                course:{
+                    type:CourseType,
+                    resolve:(parent)=>{
+                        return courses()
+                            .then(courses=>courses.find(course.course_id===parent.course_id))
+                                .catche(error=>console.error(`Error finding course: ${error}`)
+                                )
+                    }
+                },
+                createdBy:{
+                    type:UserType,
+                    resolve:(parent)=>{
+                        return users()
+                            .then(users=>users.find(user=>user.user_id===parent.created_by))
+                    }
+                } 
+            }
+        )
+    }
+)
 // --- Input Types for Mutations ---
 
 //a) Input type for creating a new user
@@ -1056,6 +1106,20 @@ const AnnouncementInput=new GraphQLInputObjectType(
             title:{type:new GraphQLNonNull(GraphQLString)},
             content:{type:new GraphQLNonNull(GraphQLString)},
             scheduledDate:{type:GraphQLString}
+        }
+    }
+)
+
+// j) Input for creating discussion forums
+const DiscussionForumsInput=new GraphQLInputObjectType(
+    {
+        name:"DiscussionForumsInput",
+        description:"Input fields for creating new discussion forum",
+        fields:{
+            courseId:{type:new GraphQLNonNull(GraphQLID)},
+            title :{type:new GraphQLNonNull(GraphQLString)},
+            description:{type:GraphQLString}, 
+            createdBy:{type:new GraphQLNonNull(GraphQLID)}
         }
     }
 )
@@ -1319,7 +1383,33 @@ const RootMutation = new GraphQLObjectType({
                 })
                     .catch(error=>console.error(`Error creating announcement: ${error}`))
         }
+    },
+
+    // Create discussion forum
+    createDiscussionForum:{
+        type:DiscussionForumType,
+        description:"Create discussion forum",
+        args:{
+            input:{type:DiscussionForumsInput}
+        },
+        resolve:(parent,{input})=>{
+            const newForum={
+                course_id:input.courseId,
+                title:input.title,
+                description:input.description,
+                created_by:input.createdBy
+            }
+            return createDiscussionForums(newForum)
+                .then(response=>{
+                    const insertId=response.insertId
+                    return discussionForums()
+                        .then(forums=>forums.find(forum=>forum.forum_id===insertId))
+                            .catch(error=>console.error(`Error finding forum: ${error}`))
+                })
+                    .catch(error=>onsole.error(`Error creating forum: ${error}`))
+        }
     }
+
   },
   
 });
