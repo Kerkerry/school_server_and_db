@@ -335,6 +335,25 @@ const createCourseMaterial=(cmaterial)=>{
         )
     })
 }
+
+// 7. create submission 
+const createSubmission=(submission)=>{
+    return new Promise((resolve,reject)=>[
+        connection.query(
+            `INSERT INTO Submissions(assignment_id,student_id,file_path,text_content,status)
+            VALUES(?,?,?,?,?)`,
+            [submission.assignment_id,submission.student_id,submission.file_path,submission.text_content,submission.status],
+            (err,result)=>{
+                if(err){
+                    console.error(`Error creating submission: ${err}`);   
+                    reject(err);
+                }else{
+                    resolve(result)
+                }
+            }
+        )
+    ])
+}
 // --- GraphQL Enum Types for Fixed Values ---
 const UserRoleType=new GraphQLEnumType(
     {
