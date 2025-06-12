@@ -316,6 +316,25 @@ const createCourseModule=(cmodule)=>{
         )
     })
 }
+
+// 6. Create course materials
+const createCourseMaterial=(cmaterial)=>{
+    return new Promise((resolve,reject)=>{
+        connection.query(
+            `INSERT INTO Course_Materials(course_id,module_id,title,description,file_path,file_type,external_url,uploaded_by)
+            VALUES(?,?,?,?,?,?,?,?)`,
+            [cmaterial.course_id,cmaterial.module_id,cmaterial.title,cmaterial.description,cmaterial.file_path,cmaterial.file_type,cmaterial.external_url,cmaterial.uploaded_by],
+            (err,result)=>{
+                if(err){
+                    console.error(`Error creating course material: ${err}`);
+                    reject(err)
+                }else{
+                    resolve(result)
+                }
+            }
+        )
+    })
+}
 // --- GraphQL Enum Types for Fixed Values ---
 const UserRoleType=new GraphQLEnumType(
     {
@@ -883,6 +902,25 @@ const CourseModuleInput=new GraphQLInputObjectType(
     }
 )
 
+// f) Input type for creating course material
+const CourseMaterialInput=new GraphQLInputObjectType(
+    {
+        name:"CourseMaterialInput",
+        description:"Input fields for creating course material",
+        fields:{
+            courseId:{type:new GraphQLNonNull(GraphQLID)},
+            moduleId:{type:GraphQLID},
+            title:{type:new GraphQLNonNull(GraphQLString)},
+            description:{type:GraphQLString},
+            filePath:{type:GraphQLString},
+            fileType:{type:GraphQLString},
+            externalUrl:{type:GraphQLString},
+            uploadedBy:{type:new GraphQLNonNull(GraphQLID)},
+        }
+
+    }
+)
+
 // --- Root Mutation Type ---
 // This is the entry point for all mutations (data modifications).
 const RootMutation = new GraphQLObjectType({
@@ -951,6 +989,7 @@ const RootMutation = new GraphQLObjectType({
 
         }
     },
+
     // Create enrollment
     createEnrollment:{
         type:EnrollmentType,
@@ -975,6 +1014,7 @@ const RootMutation = new GraphQLObjectType({
 
         }
     },
+
     // Create course module
     createCourseModule:{
         type:CourseModuleType,
@@ -997,6 +1037,36 @@ const RootMutation = new GraphQLObjectType({
                             .catch(error=>console.error(`Error fetching module in the mutation: ${error}`))
                 })
                     .catch(error=>console.error(`Error creating module in the mutation: ${error}`))
+        }
+    },
+
+    // Create course material
+    createCourseMaterial:{
+        type:CourseMaterialDetailType,
+        description:"Create new course material",
+        args:{
+            input:{type:CourseMaterialInput}
+        },
+        resolve:(parent,{input})=>{
+            const newCMaterial={
+                course_id:input.courseId,
+                module_id:input.moduleId,
+                title:input.title,
+                description:input.description,
+                file_path:input.filePath,
+                file_type:input.fileType,
+                external_url:input.externalUrl,
+                uploaded_by:input.uploadedBy
+            }
+            return createCourseMaterial(newCMaterial)
+                .then(response=>{
+                    const insertId=response.insertId
+                    return courseMaterials()
+                        .then(cmaterialsList=>cmaterialsList.find(cm=>cm.material_id===insertId))
+                            .catch(error=>console.error(`Error finding course material: ${error}`))
+                })
+                    .catch(error=>console.error(`Error creating course material (from mutation): ${error}`))
+                
         }
     },
     // Creating assignment
