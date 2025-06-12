@@ -406,6 +406,7 @@ const SubmissionTypes=new GraphQLEnumType(
     }
 )
 
+
 // --- GraphQL Object Types ---
 // 1. UserType
 const UserType=new GraphQLObjectType(
@@ -940,6 +941,22 @@ const CourseMaterialInput=new GraphQLInputObjectType(
     }
 )
 
+// g) Input type for creating submission
+
+const SubmissionInput=new GraphQLInputObjectType(
+    {
+        name:"SubmissionInput",
+        description:"Input fields for creating submission",
+        fields:{
+            assignmentId:{type:new GraphQLNonNull(GraphQLID)},
+            studentId :{type:new GraphQLNonNull(GraphQLID)},
+            filePath:{type:GraphQLString},
+            textContent:{type:GraphQLString},
+            status:{type:SubmissionTypes}
+        }
+    }
+)
+
 // --- Root Mutation Type ---
 // This is the entry point for all mutations (data modifications).
 const RootMutation = new GraphQLObjectType({
@@ -1086,6 +1103,32 @@ const RootMutation = new GraphQLObjectType({
                 })
                     .catch(error=>console.error(`Error creating course material (from mutation): ${error}`))
                 
+        }
+    },
+
+    // Create submission
+    createSubmission:{
+        type:SubmissionType,
+        description:"Creates a new submission",
+        args:{
+            input:{type:SubmissionInput}
+        },
+        resolve:(parent,{input})=>{
+            const newSubmission={
+                assignment_id:input.assignmentId,
+                student_id:input.studentId,
+                file_path:input.filePath,
+                text_content:input.textContent,
+                status:input.status
+            }
+            return createSubmission(newSubmission)
+                .then(response=>{
+                    const insertId=response.insertId;
+                    return submissions()
+                        .then(submissionsList=>submissionsList.find(sub=>sub.submission_id===insertId))
+                            .catch(error=>console.error(`Error creating submission (mutation): ${error}`))
+                })
+                    .catch(error=>console.error(`Error creating submission (mutation): ${error}`))
         }
     },
     // Creating assignment
