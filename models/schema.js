@@ -411,6 +411,24 @@ const createDiscussionForums=(forums)=>{
         )
     })
 }
+
+//11. Discussion_Posts 
+const createDiscussionPost=(post)=>{    
+    return new Promise((resolve,reject)=>{
+        connection.query(
+            `INSERT INTO Discussion_Posts(forum_id,parent_post_id,user_id,content)
+            VALUES(?,?,?,?)`,
+            [post.forum_id,post.parent_post_id,post.user_id,post.content],
+            (err,result)=>{
+                if(err){
+                    reject(err)
+                }else{
+                    resolve(result)
+                }
+            }
+        )
+    })
+}  
 // --- GraphQL Enum Types for Fixed Values ---
 const UserRoleType=new GraphQLEnumType(
     {
@@ -959,6 +977,44 @@ const DiscussionForumType=new GraphQLObjectType(
         )
     }
 )
+
+// 11. DiscussionPostType
+const  DiscussionPostType=new GraphQLObjectType(
+    {
+       name:"DiscussionPostType",
+       description:"Represents discussion post",
+       fields:()=>(
+        {
+            postId:{type:GraphQLID,resolve:(post)=>post.post_id},
+            content:{type:GraphQLString},
+            postDate:{type:GraphQLString,resolve:(post)=>post.post_date},
+            parentPost:{
+                type:DiscussionPostType,
+                resolve:(parent)=>{
+                    return discussionPosts()
+                        .then(posts=>posts.find(post=>post.post_id==parent.parent_post_id))
+                }
+            },
+            forum:{
+                type:DiscussionForumType,
+                resolve:(parent)=>{
+                    return discussionForums()
+                        .then(forums=>forums.find(forum=>forum.forum_id===parent.forum_id))
+                            .catch(console.error(`Error in finding forum: ${error}`))
+                }
+            },
+            user:{
+                type:UserType,
+                resolve:(parent)=>{
+                    return users()
+                        .then(users=>users.find(user=>user.user_id===parent.user_id))
+                            .catch(console.error(`Error in finding user: ${error}`))
+                }
+            }
+        }
+       ) 
+    }
+)
 // --- Input Types for Mutations ---
 
 //a) Input type for creating a new user
@@ -1123,6 +1179,20 @@ const DiscussionForumsInput=new GraphQLInputObjectType(
         }
     }
 )
+
+// k) Input for creating Discussion Posts
+const DiscussionPostInput=new GraphQLInputObjectType(
+    {
+        name:"DiscussionPostInput",
+        description:"Input fields representing discussion post",
+        fields:{
+            forumId:{type:new GraphQLNonNull(GraphQLID)},
+            parentPostId:{type:GraphQLID},
+            userId:{type:new GraphQLNonNull(GraphQLID)},
+            content:{type:new GraphQLNonNull(GraphQLString)},
+        }
+    }
+) 
 // --- Root Mutation Type ---
 // This is the entry point for all mutations (data modifications).
 const RootMutation = new GraphQLObjectType({
@@ -1408,7 +1478,31 @@ const RootMutation = new GraphQLObjectType({
                 })
                     .catch(error=>onsole.error(`Error creating forum: ${error}`))
         }
-    }
+    },
+
+    createDiscussionPost:{
+        type:DiscussionPostType,
+        args:{
+            input:{type:DiscussionPostInput}
+        },
+        resolve:(parent,{input})=>{
+            const newPost={
+                forum_id: parseInt(input.forumId),
+                parent_post_id:isNaN(parseInt(input.parentPostId))?null:parseInt(input.parentPostId),
+                user_id:parseInt(input.userId),
+                content:input.content   
+            }
+
+            return createDiscussionPost(newPost)
+                .then(response=>{
+                    const insertId=response.insertId
+                    return discussionPosts()
+                        .then(posts=>posts.find(post=>post.post_id===insertId))
+                            .catch(error=>console.error(`Failed to find post: ${error}`))
+                })
+                    .catch(error=>console.error(`Failed to create post: ${error}`))
+        }
+    } 
 
   },
   
