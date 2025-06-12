@@ -360,7 +360,7 @@ const createGrade=(grade)=>{
     return new Promise((resolve,reject)=>{
         connection.query(
             `INSERT INTO Grades(submission_id,score,feedback_text,feedback_audio_url,graded_by)
-            VLAUES(?,?,?,?,?)`,
+            VALUES(?,?,?,?,?)`,
             [grade.submission_id,grade.score,grade.feedback_text,grade.feedback_audio_url,grade.graded_by],
             (err,result)=>{
                 if(err){
@@ -707,7 +707,7 @@ const GradeType=new GraphQLObjectType(
         fields:()=>(
             {
                 gradeId:{type:GraphQLString,resolve:(grade)=>grade.grade_id},
-                scor:{type:GraphQLFloat},
+                score:{type:GraphQLFloat},
                 feedbackText :{type:GraphQLString,resolve:(grade)=>grade.feedback_text },
                 feedbackAudio :{type:GraphQLString,resolve:(grade)=>grade.feedback_audio },
                 gradeDate  :{type:GraphQLString,resolve:(grade)=>grade.grade_date  },
@@ -976,6 +976,20 @@ const SubmissionInput=new GraphQLInputObjectType(
     }
 )
 
+// Input type for creating grade
+const GradeInput=new GraphQLInputObjectType(
+    {
+        name:"GradeInput",
+        description:"Input fields for creating grade",
+        fields:{
+            submissionId:{type:new GraphQLNonNull(GraphQLID)},
+            score:{type:GraphQLFloat},
+            feedbackText:{type:GraphQLString},
+            feedbackAudioUrl:{type:GraphQLString},
+            gradedBy:{type:GraphQLID}	
+        }
+    }
+)
 // --- Root Mutation Type ---
 // This is the entry point for all mutations (data modifications).
 const RootMutation = new GraphQLObjectType({
@@ -1148,6 +1162,33 @@ const RootMutation = new GraphQLObjectType({
                             .catch(error=>console.error(`Error creating submission (mutation): ${error}`))
                 })
                     .catch(error=>console.error(`Error creating submission (mutation): ${error}`))
+        }
+    },
+
+    // Create grade
+    createGrade:{
+        type:GradeType,
+        description:"Create new garde",
+        args:{
+            input:{type:GradeInput}
+        },
+        resolve:(parent,{input})=>{
+            const newGrade={
+                submission_id:parseInt(input.submissionId),
+                score:parseFloat(input.score),
+                feedback_text:input.feedbackText,
+                feedback_audio_url:input.feedbackAudioUrl,
+                graded_by:parseInt(input.gradedBy)		
+            }
+
+            return createGrade(newGrade)
+                .then(response=>{
+                    const insertId=response.insertId;
+                    return grades()
+                        .then(gradesList=>gradesList.find(grade=>grade.grade_id===insertId))
+                            .catch(error=>console.error(`Error finding grade (mutation): ${error}`))
+                })
+                    .catch(error=>console.error(`Error creating grade (mutation): ${error}`))
         }
     },
     // Creating assignment
