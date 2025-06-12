@@ -373,6 +373,26 @@ const createGrade=(grade)=>{
         )
     })
 }
+
+// Create Announcements
+const createAnnouncement=(announcement)=>{
+    console.log(announcement);
+    
+    return new Promise((resolve,reject)=>{
+        connection.query(
+            `INSERT INTO Announcements(course_id,instructor_id,title,content,scheduled_date)
+            VALUES(?,?,?,?,?)`,
+            [announcement.course_id,announcement.instructor_id,announcement.title,announcement.content,announcement.scheduled_date],
+            (err,result)=>{
+                if(err){
+                    reject(err);
+                }else{
+                    resolve(result)
+                }
+            }
+        )
+    })
+}
 // --- GraphQL Enum Types for Fixed Values ---
 const UserRoleType=new GraphQLEnumType(
     {
@@ -659,7 +679,7 @@ const SubmissionType=new GraphQLObjectType(
                     resolve:(parent)=>{
                         // return mockDatabase. assignments.find(assignment=>assignment.assignment_id==parent.assignment_id)
                         return assignments()
-                                .then(assignmentsList=>assignmentsList.find(assignment=>assignment.assignment_id==parent.assignment_id))
+                                .then(assignmentsList=>assignmentsList.find(assignment=>assignment.assignment_id===parent.assignment_id))
                                     .catch(error=>{
                                         console.error("\nFailed to fetch users (via .catch):", error.message);
                                         return error;
@@ -673,7 +693,7 @@ const SubmissionType=new GraphQLObjectType(
                         // return users.find(user=>user.user_id===parent.student_id)
                         try {
                             const usersList = await users();
-                            return usersList.find(user => user.user_id == parent.student_id);
+                            return usersList.find(user => user.user_id === parent.student_id);
                         } catch (error) {
                             console.error("\nFailed to fetch users (via .catch):", error.message);
                             return error;
@@ -840,7 +860,8 @@ const CourseModuleType=new GraphQLObjectType(
         name:"CourseModuleType",
         description:"Represents course modules",
         fields:()=>(
-            {   moduleId:{type:GraphQLID,resolve:(cm)=>cm.module_id},
+            {   
+                moduleId:{type:GraphQLID,resolve:(cm)=>cm.module_id},
                 moduleName:{type:GraphQLString,resolve:(cm)=>cm.module_name},
                 moduleOrder:{type:GraphQLInt,resolve:(cm)=>cm.module_order},
                 course:{
@@ -849,6 +870,39 @@ const CourseModuleType=new GraphQLObjectType(
                         return courses()
                             .then(coursesList=>coursesList.find(course=>course.course_id===parent.course_id))
                                 .catch(error=>console.error(`Error finding a course for course module: ${error}`))
+                    }
+                }
+            }
+        )
+    }
+)
+
+//9. AnnouncementType
+const AnnouncementType=new GraphQLObjectType(
+    {
+        name:"AnnouncementType",
+        description:"Represents announcement",
+        fields:()=>(
+            {
+                announcementId:{type:GraphQLID,resolve:(an)=>an.announcement_id},
+                title:{type:GraphQLString},
+                content:{type:GraphQLString},
+                postDate:{type:GraphQLString},
+                scheduledDate:{type:GraphQLString},
+                course:{
+                    type:CourseType,
+                    resolve:(parent)=>{
+                        return courses()
+                            .then(coursesList=>coursesList.find(course=>course.course_id===parent.course_id))
+                                .catch(error=>console.error(`Error finding course:${error}`))
+                    }
+                },
+                instructor:{
+                    type:UserType,
+                    resolve:(parent)=>{
+                        return users()
+                            .then(users=>users.find(user=>user.user_id===parent.instructor_id))
+                                .catch(error=>console.error(`Error finding user:${error}`))
                     }
                 }
             }
@@ -976,7 +1030,7 @@ const SubmissionInput=new GraphQLInputObjectType(
     }
 )
 
-// Input type for creating grade
+//h) Input type for creating grade
 const GradeInput=new GraphQLInputObjectType(
     {
         name:"GradeInput",
@@ -987,6 +1041,21 @@ const GradeInput=new GraphQLInputObjectType(
             feedbackText:{type:GraphQLString},
             feedbackAudioUrl:{type:GraphQLString},
             gradedBy:{type:GraphQLID}	
+        }
+    }
+)
+
+// i) Input for creating announcement
+const AnnouncementInput=new GraphQLInputObjectType(
+    {
+        name:"AnnouncementInput",
+        description:"Input fields for creating new announcement",
+        fields:{
+            courseId:{type:new GraphQLNonNull(GraphQLID)},
+            instructorId:{type:new GraphQLNonNull(GraphQLID)},
+            title:{type:new GraphQLNonNull(GraphQLString)},
+            content:{type:new GraphQLNonNull(GraphQLString)},
+            scheduledDate:{type:GraphQLString}
         }
     }
 )
@@ -1227,7 +1296,30 @@ const RootMutation = new GraphQLObjectType({
         // return newAssignment;
       },
     },
-
+    // Create announcement
+    createAnnouncement:{
+        type:AnnouncementType,
+        args:{
+            input:{type:AnnouncementInput}
+        },
+        resolve:(parent,{input})=>{
+            const newAnnouncement={
+                course_id:parseInt(input.courseId),
+                instructor_id:parseInt(input.instructorId),
+                title:input.title,
+                content:input.content,
+                scheduled_date:input.scheduledDate
+            }
+            return createAnnouncement(newAnnouncement)
+                .then(response=>{
+                    const insertId=response.insertId;
+                    return announcements()
+                        .then(announcements=>announcements.find(announcement=>announcement.announcement_id===insertId))
+                            .catch(error=>console.error(`Error finding announcement: ${error}`))
+                })
+                    .catch(error=>console.error(`Error creating announcement: ${error}`))
+        }
+    }
   },
   
 });
