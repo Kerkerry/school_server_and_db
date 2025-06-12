@@ -354,6 +354,25 @@ const createSubmission=(submission)=>{
         )
     ])
 }
+
+// 8. Create grade
+const createGrade=(grade)=>{
+    return new Promise((resolve,reject)=>{
+        connection.query(
+            `INSERT INTO Grades(submission_id,score,feedback_text,feedback_audio_url,graded_by)
+            VLAUES(?,?,?,?,?)`,
+            [grade.submission_id,grade.score,grade.feedback_text,grade.feedback_audio_url,grade.graded_by],
+            (err,result)=>{
+                if(err){
+                    console.error(`Error creating grade: ${err}`);
+                    reject(err)
+                }else{
+                    resolve(result)
+                }
+            }
+        )
+    })
+}
 // --- GraphQL Enum Types for Fixed Values ---
 const UserRoleType=new GraphQLEnumType(
     {
