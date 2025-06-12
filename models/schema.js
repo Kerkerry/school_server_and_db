@@ -1,4 +1,4 @@
-import { GraphQLEnumType, GraphQLFloat, GraphQLID, GraphQLInt, GraphQLList, GraphQLObjectType,GraphQLInputObjectType, GraphQLNonNull, GraphQLSchema, GraphQLString } from "graphql";
+import { GraphQLEnumType, GraphQLFloat, GraphQLID, GraphQLInt, GraphQLList, GraphQLObjectType,GraphQLInputObjectType, GraphQLNonNull, GraphQLSchema, GraphQLString, GraphQLBoolean } from "graphql";
 import connection from './connection.js'
 import bcrypt from 'bcrypt'
 import mockDatabase from "./mockdb.js";
@@ -428,7 +428,25 @@ const createDiscussionPost=(post)=>{
             }
         )
     })
-}  
+} 
+
+// Create message
+const createMessage=(message)=>{
+    return new Promise((resolve,reject)=>{
+        connection.query(
+            `INSERT INTO Messages(sender_id,receiver_id,content,read_status)
+            VALUES(?,?,?,?)`,
+            [message.sender_id,message.receiver_id,message.content,message.read_status],
+            (err,result)=>{
+                if(err){
+                    reject(err)
+                }else{
+                    resolve(result)
+                }
+            }
+        )
+    })
+}
 // --- GraphQL Enum Types for Fixed Values ---
 const UserRoleType=new GraphQLEnumType(
     {
@@ -1015,6 +1033,35 @@ const  DiscussionPostType=new GraphQLObjectType(
        ) 
     }
 )
+
+// 12. MessageType
+const MessageType=new GraphQLObjectType(
+    {
+        name:"MessageType",
+        description:"Represents a message",
+        fields:()=>(
+            {
+                messageId:{type:GraphQLID,resolve:(message)=>message.message_id},
+                content:{type:GraphQLString},
+                readStatus:{type:GraphQLBoolean,resolve:(message)=>message.read_status},
+                sender:{
+                    type:UserType,
+                    resolve:(parent)=>{
+                        return users()
+                            .then(users=>users.find(user=>user.user_id===parent.sender_id))
+                    }
+                },
+                receiver:{
+                    type:UserType,
+                    resolve:(parent)=>{
+                        return users()
+                            .then(users=>users.find(user=>user.user_id===parent.receiver_id))
+                    }
+                },
+            }
+        )
+    }
+)
 // --- Input Types for Mutations ---
 
 //a) Input type for creating a new user
@@ -1193,6 +1240,20 @@ const DiscussionPostInput=new GraphQLInputObjectType(
         }
     }
 ) 
+
+// l) Input for creating for creating Message
+const MessageInput=new GraphQLInputObjectType(
+    {
+        name:"MessageInput",
+        description:"Input fields for represinting message",
+        fields:{
+            senderId:{type:new GraphQLNonNull(GraphQLID)},
+            receiverId:{type:new GraphQLNonNull(GraphQLID)},
+            content:{type:new GraphQLNonNull(GraphQLString)},
+            readStatus:{type:new GraphQLNonNull(GraphQLBoolean)},
+        }
+    }
+)
 // --- Root Mutation Type ---
 // This is the entry point for all mutations (data modifications).
 const RootMutation = new GraphQLObjectType({
@@ -1480,8 +1541,10 @@ const RootMutation = new GraphQLObjectType({
         }
     },
 
+    // Create discussion post
     createDiscussionPost:{
         type:DiscussionPostType,
+        description:"Create a discussion forum",
         args:{
             input:{type:DiscussionPostInput}
         },
@@ -1502,7 +1565,31 @@ const RootMutation = new GraphQLObjectType({
                 })
                     .catch(error=>console.error(`Failed to create post: ${error}`))
         }
-    } 
+    },
+    // Create a message
+    createMessage:{
+        type:MessageType,
+        description:"Create a message",
+        args:{
+            input:{type:MessageInput}
+        },
+        resolve:(parent,{input})=>{
+            const newMessage={
+                	sender_id:parseInt(input.senderId),
+                    receiver_id:parseInt(input.receiverId),
+                    content:input.content,
+                    read_status:input.readStatus
+            }
+            return createMessage(newMessage)
+                .then(response=>{
+                    const insertId=response.insertId;
+                    return messages()
+                        .then(messages=>messages.find(message=>message.message_id===insertId))
+                            .catch(error=>console.error(`Failed to find message: ${error}`))
+                })
+                    .catch(error=>console.error(`Failed to create message: ${error}`))
+        }
+    }
 
   },
   
