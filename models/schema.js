@@ -1677,6 +1677,27 @@ const RootQuery=new GraphQLObjectType(
                 }
             },
 
+            assignments:{
+                type:GraphQLList(AssignmentType),
+                resolve:(parent,args)=>{
+                    return assignments()
+                        .then(assignments=>assignments)
+                            .catch(error=>console.error("\nFailed to fetch assignment (via .catch):", error.message))
+                }
+            },
+
+            assignmentsType:{
+                type:GraphQLList(AssignmentType),
+                args:{
+                    assignmentType:{type:AssignmentTypes}
+                },
+                resolve:(parent,args)=>{
+                    return assignments()
+                        .then(assignments=>assignments.filter(assignment=>assignment.assignment_type===args.assignmentType))
+                            .catch(error=>console.error("\nFailed to fetch assignment (via .catch):", error.message))
+                }
+            },
+
             submission:{
                 type: SubmissionType,
                 args:{submissionId:{type:GraphQLID}},
