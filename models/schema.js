@@ -1757,8 +1757,8 @@ const RootQuery=new GraphQLObjectType(
                 type:GraphQLList(GradeType),
                 resolve:(parent,args)=>grades().then(grades=>grades).catch(error=>console.error(`Error retrieving grades: ${error}`))
             },
-            
-            CourseMaterialDetail:{
+
+            courseMaterialDetail:{
                 type:CourseMaterialDetailType,
                 args:{materialId:{type:GraphQLID}},
                 resolve:(parent,args)=>{
@@ -1770,6 +1770,10 @@ const RootQuery=new GraphQLObjectType(
                                     return error
                             })
                 }
+            },
+            courseMaterialsDetails:{
+                type:GraphQLList(CourseMaterialDetailType),
+                resolve:(parent,args)=>courseMaterials().then(materials=>materials).catch(error=>console.error(`Failed to fetch course materials: ${error}`))
             }
         }
     }
