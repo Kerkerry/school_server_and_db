@@ -1771,10 +1771,17 @@ const RootQuery=new GraphQLObjectType(
                             })
                 }
             },
+
             courseMaterialsDetails:{
                 type:GraphQLList(CourseMaterialDetailType),
                 resolve:(parent,args)=>courseMaterials().then(materials=>materials).catch(error=>console.error(`Failed to fetch course materials: ${error}`))
+            },
+
+            enrollments:{
+                type:GraphQLList(EnrollmentType),
+                resolve:(parent,args)=>enrollments().then(enrollments=>enrollments).catch(error=>console.error(`Failed to fetch enrollments: ${error}`))
             }
+
         }
     }
 )
