@@ -1667,7 +1667,13 @@ const RootQuery=new GraphQLObjectType(
                 type:AssignmentType,
                 args:{assignmentId:{type:GraphQLID}},
                 resolve:(parent,args)=>{
-                    return mockDatabase. assignments.find(assignment=>assignment.assignment_id===parseInt(args.assignmentId))
+                    // return mockDatabase. assignments.find(assignment=>assignment.assignment_id===parseInt(args.assignmentId))
+                    return assignments()
+                        .then(assignments=>assignments.find(assignment=>assignment.assignment_id===parseInt(args.assignmentId)))
+                            .catch(error=>{
+                                            console.error("\nFailed to fetch assignment (via .catch):", error.message);
+                                            return error
+                                        })
                 }
             },
 
@@ -1675,7 +1681,13 @@ const RootQuery=new GraphQLObjectType(
                 type: SubmissionType,
                 args:{submissionId:{type:GraphQLID}},
                 resolve:(parent,args)=>{
-                    return mockDatabase. submissions.find(sub=>sub.submission_id===parseInt(args.submissionId))
+                    // return mockDatabase. submissions.find(sub=>sub.submission_id===parseInt(args.submissionId))
+                    return submissions()
+                        .then(submissions=>submissions.find(sub=>sub.submission_id===parseInt(args.submissionId)))
+                            .catch(error=>{
+                                        console.error("\nFailed to fetch submission (via .catch):", error.message);
+                                        return error
+                                    })
                 }
             },
 
@@ -1683,7 +1695,13 @@ const RootQuery=new GraphQLObjectType(
                 type:GradeType,
                 args:{gradeId:{type:GraphQLID}},
                 resolve:(parent,args)=>{
-                    return mockDatabase. grades.find(grade=>grade.grade_id===parseInt(args.gradeId))
+                    // return mockDatabase. grades.find(grade=>grade.grade_id===parseInt(args.gradeId))
+                    return grades()
+                        .then(grades=>grades.find(grade=>grade.grade_id===parseInt(args.gradeId)))
+                            .catch(error=>{
+                                    console.error("\nFailed to fetch grade (via .catch):", error.message);
+                                    return error
+                                })
                 }
             },
 
@@ -1691,8 +1709,13 @@ const RootQuery=new GraphQLObjectType(
                 type:CourseMaterialDetailType,
                 args:{materialId:{type:GraphQLID}},
                 resolve:(parent,args)=>{
-                    const material=mockDatabase. course_materials.find(mat=>mat.material_id===parseInt(args.materialId))
-                    return material;
+                    // const material=mockDatabase. course_materials.find(mat=>mat.material_id===parseInt(args.materialId))
+                    return courseMaterials()
+                        .then(courseMaterials=>courseMaterials.find(mat=>mat.material_id===parseInt(args.materialId)))
+                            .catch(error=>{
+                                    console.error("\nFailed to fetch course material (via .catch):", error.message);
+                                    return error
+                            })
                 }
             }
         }
