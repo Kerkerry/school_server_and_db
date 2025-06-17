@@ -1753,6 +1753,11 @@ const RootQuery=new GraphQLObjectType(
                 }
             },
 
+            grades:{
+                type:GraphQLList(GradeType),
+                resolve:(parent,args)=>grades().then(grades=>grades).catch(error=>console.error(`Error retrieving grades: ${error}`))
+            },
+            
             CourseMaterialDetail:{
                 type:CourseMaterialDetailType,
                 args:{materialId:{type:GraphQLID}},
