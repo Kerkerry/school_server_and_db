@@ -1777,6 +1777,21 @@ const RootQuery=new GraphQLObjectType(
                 resolve:(parent,args)=>courseMaterials().then(materials=>materials).catch(error=>console.error(`Failed to fetch course materials: ${error}`))
             },
 
+            enrollment:{
+                type:EnrollmentType,
+                args:{
+                    id:{type:GraphQLID}
+                },
+                resolve:(parent,args)=>{
+                    return enrollments()
+                        .then(enrollments=>enrollments.find(enr=>enr.enrollment_id===parseInt(args.id)))
+                             .catch(error=>{
+                                    console.error("\nFailed to fetch course material (via .catch):", error.message);
+                                    return error
+                            })
+                }
+            },
+
             enrollments:{
                 type:GraphQLList(EnrollmentType),
                 resolve:(parent,args)=>enrollments().then(enrollments=>enrollments).catch(error=>console.error(`Failed to fetch enrollments: ${error}`))
