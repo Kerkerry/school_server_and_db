@@ -1686,7 +1686,7 @@ const RootQuery=new GraphQLObjectType(
                 }
             },
 
-            assignmentsType:{
+            assignmentsBasedOnType:{
                 type:GraphQLList(AssignmentType),
                 args:{
                     assignmentType:{type:AssignmentTypes}
@@ -1707,6 +1707,33 @@ const RootQuery=new GraphQLObjectType(
                         .then(submissions=>submissions.find(sub=>sub.submission_id===parseInt(args.submissionId)))
                             .catch(error=>{
                                         console.error("\nFailed to fetch submission (via .catch):", error.message);
+                                        return error
+                                    })
+                }
+            },
+
+            submissions:{
+                type:GraphQLList(SubmissionType),
+                resolve:(parent,args)=>{
+                    return submissions()
+                        .then(submissions=>submissions)
+                          .catch(error=>{
+                                        console.error("\nFailed to fetch submissions (via .catch):", error.message);
+                                        return error
+                                    })
+                }
+            },
+
+            submissionsBasedOnStatus:{
+                type:GraphQLList(SubmissionType),
+                args:{
+                    status:{type:SubmissionTypes}
+                },
+                resolve:(parent,args)=>{
+                    return submissions()
+                        .then(submissions=>submissions.filter(sub=>sub.status===args.status))
+                            .catch(error=>{
+                                        console.error("\nFailed to fetch submissions (via .catch):", error.message);
                                         return error
                                     })
                 }
