@@ -1665,7 +1665,7 @@ const RootQuery=new GraphQLObjectType(
 
             assignment:{
                 type:AssignmentType,
-                args:{assignmentId:{type:GraphQLID}},
+                args:{assignmentId:{type:GraphQLNonNull(GraphQLID)}},
                 resolve:(parent,args)=>{
                     // return mockDatabase. assignments.find(assignment=>assignment.assignment_id===parseInt(args.assignmentId))
                     return assignments()
@@ -1780,7 +1780,7 @@ const RootQuery=new GraphQLObjectType(
             enrollment:{
                 type:EnrollmentType,
                 args:{
-                    id:{type:GraphQLID}
+                    id:{type:GraphQLNonNull(GraphQLID)}
                 },
                 resolve:(parent,args)=>{
                     return enrollments()
@@ -1826,7 +1826,30 @@ const RootQuery=new GraphQLObjectType(
                             .then(modules=>modules.find(mod=>mod.module_id===parseInt(args.moduleId)))
                                 .catch(error=>console.error(`Failed to retrieve the modules: ${error}`))
                 }
-            }
+            },
+
+            announcement:{
+                type:AssignmentType,
+                args:{
+                    id:{type:GraphQLNonNull(GraphQLID)}
+                },
+                resolve:(parent,args)=>{
+                    return announcements()
+                        .then(anns=>anns.find(ann=>ann.announcement_id===parseInt(args.id)))
+                            .catch(error=>console.error(`Failed to retrieve the announcement: ${error}`))
+                }
+            },
+
+             announcements:{
+                type:GraphQLList(AssignmentType),
+                resolve:(parent,args)=>{
+                    return announcements()
+                        .then(anns=>anns)
+                            .catch(error=>console.error(`Failed to retrieve the announcement: ${error}`))
+                }
+            },
+
+            
 
         }
     }
