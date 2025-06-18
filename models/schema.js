@@ -1845,11 +1845,43 @@ const RootQuery=new GraphQLObjectType(
                 resolve:(parent,args)=>{
                     return announcements()
                         .then(anns=>anns)
-                            .catch(error=>console.error(`Failed to retrieve the announcement: ${error}`))
+                            .catch(error=>console.error(`Failed to retrieve the announcements: ${error}`))
                 }
             },
 
-            
+            discussionForum:{
+                type:DiscussionForumType,
+                args:{
+                    id:{type:GraphQLNonNull(GraphQLID)}
+                },
+                resolve:(parent,args)=>{
+                    return discussionForums()
+                        .then(forums=>forums.find(forum=>forum.forum_id===parseInt(args.id)))
+                            .catch(error=>console.error(`Failed to retrieve the discussion forum: ${error}`))
+                }   
+            },
+
+            discussionForumBasedOnCourseId:{
+                type:GraphQLList(DiscussionForumType),
+                args:{
+                    courseId:{type:GraphQLNonNull(GraphQLID)}
+                },
+                resolve:(parent,args)=>{
+                    return discussionForums()
+                        .then(forums=>forums.filter(forum=>forum.course_id===parseInt(args.courseId)))
+                            .catch(error=>console.error(`Failed to retrieve the discussion forum: ${error}`))
+                }   
+            },
+
+
+            discussionForums:{
+                type:GraphQLList(DiscussionForumType),
+                resolve:(parent,args)=>{
+                    return discussionForums()
+                        .then(forums=>forums)
+                            .catch(error=>console.error(`Failed to retrieve the discussion forums: ${error}`))
+                }   
+            },
 
         }
     }
