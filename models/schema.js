@@ -1883,6 +1883,54 @@ const RootQuery=new GraphQLObjectType(
                 }   
             },
 
+            discussionPost:{
+                type:DiscussionPostType,
+                args:{
+                    postId:{type:GraphQLNonNull(GraphQLID)}
+                },
+                resolve:(parent,args)=>{
+                    return discussionPosts()
+                        .then(posts=>posts.find(post=>post.post_id===parseInt(args.postId)))
+                            .catch(error=>console.error(`Failed to retrieve the discussion post: ${error}`))
+                }
+            },
+
+            discussionPostsUsingUserId:{
+                type:GraphQLList(DiscussionPostType),
+                args:{
+                    userId:{type:GraphQLNonNull(GraphQLID)}
+                },
+                resolve:(parent,args)=>{
+                    return discussionPosts()
+                        .then(posts=>posts.filter(post=>post.user_id===parseInt(args.userId)))
+                            .catch(error=>console.error(`Failed to retrieve the discussion posts: ${error}`))
+                }
+            },
+
+            discussionPostsUsingForumId:{
+                type:GraphQLList(DiscussionPostType),
+                args:{
+                    forumId:{type:GraphQLNonNull(GraphQLID)}
+                },
+                resolve:(parent,args)=>{
+                    return discussionPosts()
+                        .then(posts=>posts.filter(post=>post.forum_id===parseInt(args.forumId)))
+                            .catch(error=>console.error(`Failed to retrieve the discussion post: ${error}`))
+                }
+            },
+
+            discussionPostsUsingParentPostId:{
+                type:GraphQLList(DiscussionPostType),
+                args:{
+                    parentId:{type:GraphQLNonNull(GraphQLID)}
+                },
+                resolve:(parent,args)=>{
+                    return discussionPosts()
+                        .then(posts=>posts.filter(post=>post.parent_post_id===parseInt(args.parentId)))
+                            .catch(error=>console.error(`Failed to retrieve the discussion post: ${error}`))
+                }
+            },
+
         }
     }
 )
