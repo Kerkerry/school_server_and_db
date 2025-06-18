@@ -1795,6 +1795,37 @@ const RootQuery=new GraphQLObjectType(
             enrollments:{
                 type:GraphQLList(EnrollmentType),
                 resolve:(parent,args)=>enrollments().then(enrollments=>enrollments).catch(error=>console.error(`Failed to fetch enrollments: ${error}`))
+            },
+
+            courseMoudules:{
+                type:GraphQLList(CourseModuleType),
+                args:{
+                    order:{type:GraphQLInt},
+                },
+                resolve:(parent,args)=>{
+                    if(args.order!=null){
+                        return courseModules()
+                            .then(modules=>modules.filter(mod=>mod.module_order===parseInt(args.order)))
+                                .catch(error=>console.error(`Failed to retrieve the modules: ${error}`))
+                    }else{
+                        return courseModules()
+                            .then(modules=>modules)
+                                .catch(error=>console.error(`Failed to retrieve the modules: ${error}`))
+                    }
+                }
+
+            },
+
+            courseModule:{
+                type:CourseModuleType,
+                args:{
+                    moduleId:{type:GraphQLNonNull(GraphQLID)}
+                },
+                resolve:(parent,args)=>{
+                    return courseModules()
+                            .then(modules=>modules.find(mod=>mod.module_id===parseInt(args.moduleId)))
+                                .catch(error=>console.error(`Failed to retrieve the modules: ${error}`))
+                }
             }
 
         }
