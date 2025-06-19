@@ -280,6 +280,35 @@ const createUser=(userInput)=>{
     })
 }
 
+// Update user
+const updateUser=(userInput)=>{
+    const saltRounds=12;
+    return new Promise((resolve,reject)=>{
+        // Encrypting password
+        bcrypt.hash(userInput.password_hash, saltRounds, function(err, hash) {
+                if(err){
+                    reject(err)
+                }else{
+                    // Database DDL
+                        connection.query(
+                            `UPDATE users SET username=?,password_hash=?,email=?,role=?,first_name=?,last_name=? WHERE user_id=?
+                            `,
+                            [userInput.username,hash,userInput.email,userInput.role,userInput.first_name,userInput.last_name,userInput.user_id],
+                            (err,result)=>{
+                                if(err){
+                                    console.error(err);
+                                    reject(err)
+                                }else{
+                                    resolve(result)
+                                }
+                            }
+                        )
+                    
+                }
+        })
+    })
+}
+
 //3. Create course
 const createCourse=(courseInput)=>{
     return new Promise((resolve,reject)=>{
@@ -1104,6 +1133,23 @@ const UserInput=new GraphQLInputObjectType(
     }
 )
 
+// Update user
+const UpdateUserInput=new GraphQLInputObjectType(
+    {
+        name:"UpdateUserInput",
+        description:"Input fields for updating new user",
+        fields:{
+            userId:{type:new GraphQLNonNull(GraphQLID)},
+            username:{type:new GraphQLNonNull(GraphQLString)},
+            email:{type:new GraphQLNonNull(GraphQLString)},
+            role:{type:new GraphQLNonNull(UserRoleType)},
+            firstName:{type:GraphQLString},
+            lastName:{type:GraphQLString},
+            password:{type:new GraphQLNonNull(GraphQLString)}
+        }
+    }
+)
+
 //b) Input type for creating a new course
 const CourseInput=new GraphQLInputObjectType(
     {
@@ -1328,6 +1374,35 @@ const RootMutation = new GraphQLObjectType({
                             .catch(error=>error)
                 })
                     .catch(error=>console.error(`Error in a creating user mutation: ${error}`))
+        }
+    },
+
+    // Update user
+    updateUser:{
+        type:UserType,
+        description:"Update a new user",
+        args:{
+            input:{type:new GraphQLNonNull(UpdateUserInput)}
+        },
+        resolve:(parent,{input})=>{
+            const user={
+                user_id:input.userId,
+                username:input.username,
+                email:input.email,
+                password_hash:input.password,
+                role:input.role,
+                first_name:input.firstName,
+                last_name:input.lastName
+            };
+
+            return updateUser(user)
+                .then(result=>{
+                    const insertId=result.insertId;
+                    return users()
+                        .then(feedback=>console.log(feedback))
+                            .catch(error=>error)
+                })
+                    .catch(error=>console.error(`Error in a updating user mutation: ${error}`))
         }
     },
 
