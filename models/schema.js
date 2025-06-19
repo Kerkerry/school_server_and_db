@@ -35,6 +35,8 @@ const courses=()=>{
     })
 }
 
+
+
 const enrollments=()=>{
     return new Promise((resolve,reject)=>{
         connection.query(
@@ -203,7 +205,7 @@ const messages=()=>{
 
 
 // Queries to create add data into the database
-// 1. Create assignment
+// 1. Create and updating assignment
 const createAssignment=(inputData)=>{    
     return new Promise((resolve,reject)=>{
         connection.query(
@@ -217,6 +219,28 @@ const createAssignment=(inputData)=>{
             (err,result)=>{
                 if(err){
                     console.error("Error creating assignment: ",err);
+                    reject(err)
+                }else{
+                    resolve(result)
+                }
+            }
+        )
+    })
+}
+
+const updateAssignment=(inputData)=>{    
+    return new Promise((resolve,reject)=>{
+        connection.query(
+            `UPDATE assignments SET
+            course_id=?,instructor_id=?,title=?,description=?,due_date=?,instructions=?,grading_criteria=?,assignment_type=?,max_points=?,grading_scale=? WHERE assignment_id=?
+            `,
+            [
+                inputData.course_id,inputData.instructor_id,inputData.title,inputData.description,inputData.due_date,inputData.instructions,
+                inputData.grading_criteria,inputData.assignment_type,inputData.max_points,inputData.grading_scale,inputData.assignment_id
+            ],
+            (err,result)=>{
+                if(err){
+                    console.error("Error updating assignment: ",err);
                     reject(err)
                 }else{
                     resolve(result)
@@ -1134,6 +1158,24 @@ const AssignmentInput = new GraphQLInputObjectType({
     gradingScale: { type: GraphQLString },
   },
 });
+// Input for update
+const UpdateAssignmentInput = new GraphQLInputObjectType({
+  name: 'UpdateAssignmentInput',
+  description: 'Input fields for creating a new assignment.',
+  fields: {
+    assignmentId: { type: new GraphQLNonNull(GraphQLID) },
+    courseId: { type: new GraphQLNonNull(GraphQLID) }, // Required: The course this assignment belongs to
+    instructorId: { type: new GraphQLNonNull(GraphQLID) }, // Required: The instructor creating the assignment
+    title: { type: new GraphQLNonNull(GraphQLString) }, // Required
+    description: { type: GraphQLString },
+    dueDate: { type: new GraphQLNonNull(GraphQLString) }, // Required, e.g., "YYYY-MM-DD"
+    instructions: { type: GraphQLString },
+    gradingCriteria: { type: GraphQLString },
+    assignmentType: { type: new GraphQLNonNull(AssignmentTypes) }, // Required
+    maxPoints: { type: GraphQLFloat },
+    gradingScale: { type: GraphQLString },
+  },
+});
 
 // e) Input type for creating a new course module
 const CourseModuleInput=new GraphQLInputObjectType(
@@ -1259,6 +1301,7 @@ const MessageInput=new GraphQLInputObjectType(
 const RootMutation = new GraphQLObjectType({
   name: 'RootMutationType',
   description: 'The root mutation type for creating, updating, and deleting data.',
+//The mutation for creating data
   fields: {
     // Creating user
     createUser:{
@@ -1588,6 +1631,32 @@ const RootMutation = new GraphQLObjectType({
                             .catch(error=>console.error(`Failed to find message: ${error}`))
                 })
                     .catch(error=>console.error(`Failed to create message: ${error}`))
+        }
+    },
+
+    //The mutation for updating data
+    updateAssignment:{
+        type:AssignmentType,
+        args:{
+            input:{type:new GraphQLNonNull(UpdateAssignmentInput)}
+        },
+        resolve:(parent,{input})=>{
+            const assignment = {
+                    assignment_id: parseInt(input.assignmentId),
+                    course_id: parseInt(input.courseId),
+                    instructor_id: parseInt(input.instructorId),
+                    title: input.title,
+                    description: input.description || null,
+                    due_date: input.dueDate,
+                    instructions: input.instructions || null,
+                    grading_criteria: input.gradingCriteria || null,
+                    assignment_type: input.assignmentType,
+                    max_points: input.maxPoints || null,
+                    grading_scale: input.gradingScale || null,
+                };
+            return updateAssignment(assignment)
+                .then(ass=>console.log(ass))
+                    .catch(error=>console.error(error))
         }
     }
 
